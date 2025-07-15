@@ -57,7 +57,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/auction/id/{auction_id}", get(get_auction_by_auction_id))
         .route("/auctions/auctioneer/{auctioneer_id}", get(get_auctions_by_auctioneer));
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
     tracing::info!("Listening on {addr}");
 
     let listener = TcpListener::bind(addr)

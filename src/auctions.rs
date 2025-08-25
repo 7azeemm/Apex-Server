@@ -10,15 +10,15 @@ use rustc_hash::FxHashMap;
 use sea_orm::Iden;
 use sea_orm::sea_query::ExprTrait;
 use sea_orm::sqlx::types::chrono::Local;
-use tokio::sync::RwLock;
+use tokio::sync::{Notify, RwLock};
 use tokio::time::{interval, interval_at, sleep};
-use crate::bazaar::BAZAAR;
+use crate::bazaar::{BAZAAR, BAZAAR_READY};
 pub(crate) use crate::item_utils::{decode_base64, get_item_id};
 use crate::item_utils::get_item_uuid;
 use crate::item_value_calculator;
 use crate::statics::HTTP_CLIENT;
 use crate::structs::{Auction, AuctionItem, AuctionsResponse, ItemNbt, PriceDataSource, SharedPriceData};
-use crate::structs::PriceDataSource::LowestBin;
+use crate::structs::PriceDataSource::{LowestBin, NPC};
 
 const API_ENDPOINT: &str = "https://api.hypixel.net/v2/skyblock/auctions";
 const THRESHOLD: u64 = 70;
@@ -26,7 +26,9 @@ const MIN_DELAY_SECS: u64 = 20;
 const MAX_RETRIES: u64 = 3;
 const MAX_CONCURRENT_REQUESTS: usize = 10;
 
+pub static AUCTIONS_READY: Notify = Notify::const_new();
 
+//TODO: no direct access, only using getters
 pub struct AuctionManager {
     auctions: RwLock<FxHashMap<String, AuctionItem>>,
     lowest_bins: RwLock<FxHashMap<String, (String, SharedPriceData)>>,
@@ -78,6 +80,7 @@ pub fn schedule() {
                         false => MIN_DELAY_SECS,
                     });
 
+                    AUCTIONS_READY.notify_waiters();
                     ticker = interval_at(tokio::time::Instant::now() + delay, Duration::from_secs(THRESHOLD));
                     let formatted = Local::now() + Duration::from_secs(delay.as_secs());
                     println!("[Auctions] Next update in {:.1} seconds (at {})", delay.as_secs(), formatted.format("%H:%M:%S"));
@@ -115,7 +118,7 @@ async fn update() -> Result<u64, Box<dyn Error + Send + Sync>> {
             tasks.push(tokio::spawn(async move {
                 match fetch_page(page).await {
                     Ok(page_data) => {
-                        println!("[Auctions] Fetched page {}, found {} auctions", page, page_data.get_auctions().len());
+                        // println!("[Auctions] Fetched page {}, found {} auctions", page, page_data.get_auctions().len());
                         process_page(page_data.get_auctions()).await;
                     }
                     Err(e) => eprintln!("[Auctions] Failed to fetch page {}: {}", page, e)
@@ -330,20 +333,12 @@ async fn update_lowest_bin_list(edited_items: HashSet<String>) {
 async fn calculate_base_prices() {
     let lowest_bins = AUCTION_MANAGER.lowest_bins.write().await;
     let auctions = AUCTION_MANAGER.auctions.read().await;
-    for (id, (auction_id, price)) in lowest_bins.iter() {
+    for (auction_id, price) in lowest_bins.values() {
         let mut shared_price = price.write().await;
         if let LowestBin { price, clean, ..} = *shared_price {
             if clean { continue };
             if let Some(auction_item) = auctions.get(auction_id) {
                 let value = auction_item.value();
-                if value.modifiers_to_process().is_empty() && value.modifiers().is_empty() {
-                    *shared_price = LowestBin {
-                        price,
-                        clean: true,
-                        base_price: price,
-                    };
-                    continue;
-                }
                 let mut modifiers_price = 0.0;
                 for modifier in value.modifiers() {
                     modifiers_price += modifier.1.calculate_price().await;
@@ -365,26 +360,33 @@ async fn calculate_base_prices() {
 
 async fn update_auctions_values() {
     let mut auctions = AUCTION_MANAGER.auctions.write().await;
-    let lowest_bins = AUCTION_MANAGER.lowest_bins.read().await;
     for auction in auctions.iter_mut() {
-        let auction_item = auction.1;
-        item_value_calculator::calculate_auction_value(auction_item).await;
-        if let Some(i) = lowest_bins.get(auction_item.item_id()) {
-            let shared_price = i.1.read().await;
-            if let LowestBin { base_price, ..} = *shared_price {
-                auction_item.value_mut().calculate_total(base_price).await;
-            }
-        }
+        let item = auction.1;
+        let item_id = item.item_id().to_string();
+        let item_nbt = item.item_nbt().clone();
+        let value_mut = item.value_mut();
+        item_value_calculator::calculate_item_value(item_id, item_nbt, value_mut).await;
     }
 }
 
+pub async fn get_base_price(item_id: &str) -> Option<f64> {
+    let lowest_bin_list = AUCTION_MANAGER.lowest_bins.read().await;
+    let (_, price_data) = lowest_bin_list.get(item_id)?;
+    let price_data = price_data.read().await;
+
+    match *price_data {
+        LowestBin { base_price, .. } => Some(base_price),
+        NPC { price } => Some(price),
+        _ => None
+    }
+}
 
 pub async fn get_shared_lowest_bin(item_id: &str) -> Option<SharedPriceData> {
     let lowest_bin_list = AUCTION_MANAGER.lowest_bins.read().await;
     let (_, price_data) = lowest_bin_list.get(item_id)?;
     Some(Arc::clone(price_data))
 }
-
+//TODO: why return_id ?
 pub async fn get_lowest_bin(item_id: &str, return_id: bool) -> Option<(f64, Option<String>)> {
     let lowest_bin_list = AUCTION_MANAGER.lowest_bins.read().await;
     let (auction_id, price_data) = lowest_bin_list.get(item_id)?;

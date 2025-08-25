@@ -2,12 +2,12 @@ use std::cmp::max;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{Arc, LazyLock};
-use std::time::{Duration, Instant};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use once_cell::sync::Lazy;
 use rustc_hash::FxHashMap;
 use sea_orm::Iden;
 use tokio::sync::{Notify, RwLock};
-use tokio::time::{interval, interval_at};
+use tokio::time::{interval, interval_at, Instant};
 use crate::statics::HTTP_CLIENT;
 use crate::structs::{BazaarResponse, PriceDataSource, SharedPriceData};
 use crate::structs::PriceDataSource::Bazaar;
@@ -27,8 +27,8 @@ pub fn schedule() {
             match update().await {
                 Ok(last_updated) => {
                     let next_update_time = (last_updated / 1000) + THRESHOLD;
-                    let now = std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
+                    let now = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
                         .unwrap()
                         .as_secs();
 
@@ -38,12 +38,12 @@ pub fn schedule() {
                     });
 
                     BAZAAR_READY.notify_waiters();
-                    ticker = interval_at(tokio::time::Instant::now() + delay, Duration::from_secs(THRESHOLD));
+                    ticker = interval_at(Instant::now() + delay, Duration::from_secs(THRESHOLD));
                     println!("[Bazaar] Next update in {:.1} seconds", delay.as_secs());
                 },
                 Err(err) => {
                     eprintln!("[Bazaar] Error: {:?}", err);
-                    ticker = interval_at(tokio::time::Instant::now() + Duration::from_secs(MIN_DELAY_SECS), Duration::from_secs(THRESHOLD));
+                    ticker = interval_at(Instant::now() + Duration::from_secs(MIN_DELAY_SECS), Duration::from_secs(THRESHOLD));
                 }
             }
         }
@@ -93,60 +93,6 @@ async fn update() -> Result<u64, Box<dyn std::error::Error>> {
             );
         }
     }
-    // println!("Processing took {:.2?}", process_start.elapsed());
-
-    // let vec = IDK.read().await;
-    // if vec.len() == 0 {
-    //     let bazaar = BAZAAR.read().await;
-    //     if let Some(shared) = bazaar.get("ENCHANTED_DIAMOND") {
-    //         println!("{:?}", shared);
-    //         drop(vec);
-    //         let mut vec = IDK.write().await;
-    //         let mut i: HashMap<String, SharedPriceData> = HashMap::new();
-    //         i.insert("ENCHANTED_DIAMOND".to_string(), Arc::clone(shared));
-    //         let item_value = ItemValue::new(i);
-    //         vec.push(item_value);
-    //     }
-    // } else {
-    //     let item = vec.get(0);
-    //     println!("{:?}", item);
-    // }
-
-    // // Step 1: Create shared bazaar map
-    // let mut bazaar: HashMap<String, SharedPriceData> = HashMap::new();
-    //
-    // // Step 2: Insert a shared price
-    // let shared = Arc::new(RwLock::new(PriceDataSource::Bazaar {
-    //     buy_price: 100.0,
-    //     sell_price: 90.0,
-    // }));
-    // bazaar.insert("ENCHANTED_CARROT".to_string(), Arc::clone(&shared));
-    //
-    // // Step 3: Clone the pointer to simulate external reference
-    // let external_ref = Arc::clone(&shared);
-    //
-    // // Step 4: Read before update
-    // {
-    //     let data = external_ref.read().await;
-    //     println!("Before update: {:?}", *data);
-    // }
-    //
-    // // Step 5: Update via write lock
-    // {
-    //     let mut data = shared.write().await;
-    //     *data = PriceDataSource::Bazaar {
-    //         buy_price: 1234.0,
-    //         sell_price: 1111.0,
-    //     };
-    // }
-    //
-    // // Step 6: Read again from external ref
-    // {
-    //     let data = external_ref.read().await;
-    //     println!("After update: {:?}", *data);
-    // }
-
-    // println!("Bazaar Total time: {:.2?}", total_start.elapsed());
 
     Ok(bazaar_response.last_updated())
 }
@@ -157,7 +103,7 @@ pub async fn get_item_price(id: &str) -> Option<f64> {
     let value = match bazaar_map.get(id) {
         Some(price_data) => price_data,
         None => {
-            println!("Couldn't find bazaar price of {id}");
+            // println!("Couldn't find bazaar price of {id}");
             return None
         }
     };

@@ -7,6 +7,7 @@ use fastnbt::Value;
 use once_cell::sync::Lazy;
 use sea_orm::Iden;
 use tokio::sync::RwLock;
+use crate::auctions::{get_base_price, get_lowest_bin, get_shared_lowest_bin};
 use crate::modifiers::ability_scroll::AbilityScrollModifier;
 use crate::modifiers::art_of_peace::ArtOfPieceModifier;
 use crate::modifiers::art_of_war::ArtOfWarModifier;
@@ -37,10 +38,11 @@ use crate::modifiers::upgrade_level::UpgradeLevelModifier;
 use crate::modifiers::wet_book::WetBookModifier;
 use crate::modifiers::wood_singularity_count::WoodSingularityModifier;
 use crate::structs::{Auction, AuctionItem, ItemNbt, ItemValue, PriceData, PriceDataSource, SharedPriceData};
+use crate::structs::PriceDataSource::LowestBin;
 
 #[async_trait]
 pub trait ModifierHandler: Send + Sync {
-    async fn calculate_value(&self, item_id: &str, modifier: &Value, modifiers: &mut ItemValue) -> bool;
+    async fn calculate_value(&self, item_id: &str, modifier: &Value, modifiers: &mut ItemValue);
 }
 
 pub static MODIFIERS: Lazy<HashMap<&'static str, Box<dyn ModifierHandler>>> = Lazy::new(|| {
@@ -77,21 +79,22 @@ pub static MODIFIERS: Lazy<HashMap<&'static str, Box<dyn ModifierHandler>>> = La
     map
 });
 
-pub async fn calculate_auction_value(auction: &mut AuctionItem) {
-    let modifiers_to_process = auction.value().modifiers_to_process().clone();
-    if modifiers_to_process.is_empty() {
-        return;
-    }
+pub async fn calculate_item_value(item_id: String, item_nbt: ItemNbt, item_value: &mut ItemValue) {
+    let mut modifiers = HashSet::new();
+    let Some(Value::Compound(attributes)) = item_nbt.tag.as_ref().and_then(|tag| tag.extra_attributes.as_ref()).cloned() else { return; };
 
-    let item_id = auction.item_id().to_string();
-    let Some(Value::Compound(attributes)) = auction.item_nbt().tag.as_ref().and_then(|tag| tag.extra_attributes.as_ref()).cloned() else { return; };
-
-    for modifier_key in modifiers_to_process {
-        if let (Some(handler), Some(attr_value)) = (MODIFIERS.get(modifier_key.as_str()), attributes.get(&modifier_key)) {
-            let value = auction.value_mut();
-            if handler.calculate_value(item_id.as_str(), attr_value, value).await {
-                value.modifiers_to_process_mut().remove(&modifier_key);
-            }
+    for modifier in MODIFIERS.keys() {
+        if attributes.contains_key(*modifier) {
+            modifiers.insert(*modifier);
         }
     }
+
+    for modifier_key in modifiers {
+        if let (Some(handler), Some(attr_value)) = (MODIFIERS.get(modifier_key), attributes.get(modifier_key)) {
+            handler.calculate_value(&item_id, attr_value, item_value).await;
+        }
+    }
+
+    let price = get_base_price(&item_id).await.unwrap_or(0.0);
+    item_value.calculate_total(price).await;
 }

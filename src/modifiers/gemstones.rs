@@ -4,8 +4,9 @@ use fastnbt::Value;
 use phf::{phf_set, Set};
 use sea_orm::{ColIdx, Iden};
 use crate::bazaar::{get_item_price, get_item_shared_price};
+use crate::item_utils::get_readable_name;
 use crate::item_value_calculator::ModifierHandler;
-use crate::structs::{ItemValue, Modifier};
+use crate::structs::{ItemValue, Modifier, ModifierInfo};
 
 pub struct GemstonesModifier;
 static SPECIAL_GEMS: Set<&'static str> = phf_set! {
@@ -15,8 +16,8 @@ static SPECIAL_GEMS: Set<&'static str> = phf_set! {
 
 #[async_trait]
 impl ModifierHandler for GemstonesModifier {
-    async fn calculate_value(&self, _: &str, modifier: &Value, item_value: &mut ItemValue) -> bool {
-        let Value::Compound(gems) = modifier else { return false };
+    async fn calculate_value(&self, _: &str, modifier: &Value, item_value: &mut ItemValue) {
+        let Value::Compound(gems) = modifier else { return };
 
         let mut result: HashMap<String, usize> = HashMap::new();
 
@@ -45,15 +46,12 @@ impl ModifierHandler for GemstonesModifier {
         }
 
         for (id, count) in result {
-            if let Some(shared_price) = get_item_shared_price(&id).await {
-                item_value.add_modifier(&id, Modifier::new(count as i32, shared_price));
-            }
+            let price = get_item_shared_price(&id).await;
+            item_value.add_modifier(&id, Modifier::new(count as i32, price, ModifierInfo::new("Gemstones", get_readable_name(&*id))));
         }
 
         //Todo: Apply cost
         //https://github.com/NotEnoughUpdates/NotEnoughUpdates-REPO/blob/master/.github/scripts/updateGemstoneCosts.py
-
-        true
     }
 }
 

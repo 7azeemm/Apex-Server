@@ -21,3 +21,6 @@ phf = { version = "0.12.1", features = ["macros"] }
 axum = "0.8.4"
 tracing = "0.1.41"
 chrono = "0.4.41"
+git2 = "0.20.2"
+fuzzy-matcher = "0.3.7"
+strsim = "0.11.1"

@@ -6,8 +6,9 @@ use phf::{phf_map, phf_set, Map, Set};
 use tokio::sync::RwLock;
 use crate::auctions::get_shared_lowest_bin;
 use crate::bazaar::get_item_shared_price;
+use crate::item_utils::get_readable_name;
 use crate::item_value_calculator::ModifierHandler;
-use crate::structs::{ItemValue, Modifier, PriceDataSource, SharedPriceData};
+use crate::structs::{ItemValue, Modifier, ModifierInfo, PriceDataSource, SharedPriceData};
 
 pub struct UpgradeLevelModifier;
 
@@ -41,11 +42,11 @@ pub static SKIP_FOR_NOW: Set<&'static str> = phf_set! { //TODO: crimson essence
 
 #[async_trait]
 impl ModifierHandler for UpgradeLevelModifier {
-    async fn calculate_value(&self, item_id: &str, modifier: &Value, item_value: &mut ItemValue) -> bool {
-        let Value::Int(level) = modifier else { return false };
+    async fn calculate_value(&self, item_id: &str, modifier: &Value, item_value: &mut ItemValue) {
+        let Value::Int(level) = modifier else { return };
         for skip in SKIP_FOR_NOW.iter() {
             if item_id.contains(skip) {
-                return true;
+                return;
             }
         }
 
@@ -62,20 +63,17 @@ impl ModifierHandler for UpgradeLevelModifier {
         }
 
         if regular_stars_value != 0.0 {
-            let shared_price = SharedPriceData::new(RwLock::new(PriceDataSource::NPC { price: regular_stars_value }));
-            item_value.add_modifier(&format!("{regular_stars}_STARS"), Modifier::new_one(shared_price));
+            let price = SharedPriceData::new(RwLock::new(PriceDataSource::NPC { price: regular_stars_value }));
+            item_value.add_modifier(&format!("{regular_stars}_STARS"), Modifier::new_one(Some(price), ModifierInfo::new("Stars", regular_stars.to_string())));
         }
 
         for (star, id) in MASTER_STARS.entries() {
             if let Ok(star_num) = star.parse::<i32>() {
                 if star_num <= master_stars {
-                    if let Some(shared_price) = get_item_shared_price(&id).await {
-                        item_value.add_modifier(&id, Modifier::new_one(shared_price));
-                    }
+                    let price = get_item_shared_price(&id).await;
+                    item_value.add_modifier(&id, Modifier::new_one(price, ModifierInfo::new("Master Stars", get_readable_name(id))));
                 }
             }
         }
-
-        true
     }
 }

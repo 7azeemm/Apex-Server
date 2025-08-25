@@ -72,6 +72,8 @@ pub static REFORGE_STONES: Map<&'static str, &'static str> = phf_map! {
     "withered" => "WITHER_BLOOD",
     "glacial" => "FRIGID_HUSK",
     "heated" => "HOT_STUFF",
+    "bloodshot" => "SHRIVELED_CORNEA",
+    "blood_shot" => "SHRIVELED_CORNEA",
 };
 
 pub static EXECLUDE_REFORGES: Set<&'static str> = phf_set! {

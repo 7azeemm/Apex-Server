@@ -8,6 +8,22 @@ use flate2::read::GzDecoder;
 use crate::item_value_calculator::MODIFIERS;
 use crate::structs::ItemNbt;
 
+pub fn get_readable_name(text: &str) -> String {
+    text.to_lowercase()
+        .replace("enchantment", "")
+        .replace('_', " ")
+        .split_whitespace()
+        .map(|word| {
+            let mut chars = word.chars();
+            match chars.next() {
+                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<String>>()
+        .join(" ")
+}
+
 pub fn get_item_uuid(item_nbt: &ItemNbt) -> Option<String> {
     let extra_attributes = item_nbt.tag.as_ref()?.extra_attributes.as_ref()?;
 
@@ -92,10 +108,10 @@ pub fn decode_base64(encoded: &str) -> Result<ItemNbt, Box<dyn Error>> {
         Value::Compound(mut root_map) => {
             match root_map.remove("i") {
                 Some(Value::List(mut list)) => list.remove(0),
-                _ => return Err("[Auctions] Missing 'i' list".into()),
+                _ => return Err("[Decoder] Missing 'i' list".into()),
             }
         }
-        _ => return Err("[Auctions] Root is not a compound".into()),
+        _ => return Err("[Decoder] Root is not a compound".into()),
     };
 
     let item_nbt: ItemNbt = from_value(&i0)?;
@@ -103,13 +119,43 @@ pub fn decode_base64(encoded: &str) -> Result<ItemNbt, Box<dyn Error>> {
     Ok(item_nbt)
 }
 
-pub fn extract_modifiers(item_nbt: &ItemNbt) -> HashSet<String> {
-    let mut found = HashSet::new();
-    let Some(Value::Compound(attributes)) = item_nbt.tag.as_ref().and_then(|tag| tag.extra_attributes.as_ref()) else { return found };
-    for modifier in MODIFIERS.keys() {
-        if attributes.contains_key(*modifier) {
-            found.insert(modifier.to_string());
+//TODO: rename to decode multiple or smth
+pub fn decode_inventory_base64(encoded: &str) -> Result<Vec<(ItemNbt, u64)>, Box<dyn Error>> {
+    let bytes = STANDARD.decode(encoded)?;
+    let mut decoder = GzDecoder::new(Cursor::new(bytes));
+    let root: Value = from_reader(&mut decoder)?;
+
+    let items_list = match root {
+        Value::Compound(mut root_map) => {
+            match root_map.remove("i") {
+                Some(Value::List(list)) => list,
+                _ => return Err("[Decoder] Missing 'i' list in inventory".into()),
+            }
         }
+        _ => return Err("[Decoder] Root is not a compound".into()),
+    };
+
+    let mut items = Vec::new();
+    let mut slot = 0;
+    for item_value in items_list {
+        match from_value::<ItemNbt>(&item_value) {
+            Ok(item_nbt) => items.push((item_nbt, slot)),
+            Err(_) => {}, // Skip Empty slots
+        }
+        slot += 1;
     }
-    found
+
+    Ok(items)
+}
+
+pub fn format_number(n: u64) -> String {
+    if n >= 1_000_000_000 {
+        format!("{:.1}b", n as f64 / 1_000_000_000.0)
+    } else if n >= 1_000_000 {
+        format!("{:.1}m", n as f64 / 1_000_000.0)
+    } else if n >= 1_000 {
+        format!("{:.0}k", n as f64 / 1_000.0)
+    } else {
+        n.to_string()
+    }.replace(".0", "").to_string()
 }

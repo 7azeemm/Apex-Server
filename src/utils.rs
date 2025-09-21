@@ -6,8 +6,8 @@ use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 
-const NAME_TO_UUID_URL: &str = "https://api.minecraftservices.com/minecraft/profile/lookup/name";
-const UUID_TO_NAME_URL: &str = "https://sessionserver.mojang.com/session/minecraft/profile";
+const NAME_TO_UUID_URL: &str = "https://api.mojang.com/users/profiles/minecraft";
+const UUID_TO_NAME_URL: &str = "https://api.minecraftservices.com/minecraft/profile/lookup";
 static UUID_CACHE: Lazy<RwLock<HashMap<String, String>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 static NAME_CACHE: Lazy<RwLock<HashMap<String, String>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 

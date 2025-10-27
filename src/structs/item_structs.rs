@@ -1,26 +1,32 @@
 use crate::extensions::fastnbt_ext::ValueExt;
+use derive_new::new;
 use fastnbt::Value;
+use getset::Getters;
 use serde::Deserialize;
 use std::collections::HashMap;
 
 #[derive(Default, Debug, Deserialize, Clone)]
 pub struct ItemNbt {
     #[serde(rename = "Count")]
-    pub count: u8,
-    pub tag: Option<ItemTag>,
+    count: u8,
+    tag: Option<ItemTag>,
 }
 
 impl ItemNbt {
+    pub fn count(&self) -> u64 { self.count as u64 }
     pub fn get_extra_map(&self) -> Option<&HashMap<String, Value>> {
         self.tag.as_ref()?.extra_attributes.as_ref()?.as_compound()
+    }
+    pub fn get_display_map(&self) -> Option<&HashMap<String, Value>> {
+        self.tag.as_ref()?.display.as_ref()?.as_compound()
     }
 }
 
 #[derive(Default, Debug, Deserialize, Clone)]
 pub struct ItemTag {
-    pub display: Option<Value>,
+    display: Option<Value>,
     #[serde(rename = "ExtraAttributes")]
-    pub extra_attributes: Option<Value>,
+    extra_attributes: Option<Value>,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -32,10 +38,6 @@ pub struct ItemValue {
 }
 
 impl ItemValue {
-    pub fn new() -> Self {
-        Self { info: Vec::new(), modifiers_value: 0, base_value: 0, value: 0 }
-    }
-
     pub fn add(&mut self, line: &str) {
         self.info.push(line.to_owned());
     }
@@ -79,6 +81,15 @@ pub struct Modifier {
     price: u64,
 }
 
+impl Modifier {
+    pub fn new(name: &str, count: u64, price: u64) -> Self {
+        Self { name: name.to_owned(), count, price }
+    }
+
+    pub fn count(&self) -> u64 { self.count }
+    pub fn get_price(&self) -> u64 { &self.price * self.count }
+}
+
 #[derive(Debug, Clone)]
 pub struct ModifierGroup {
     name: String,
@@ -97,25 +108,9 @@ impl ModifierGroup {
     }
 }
 
-impl Modifier {
-    pub fn new(name: &str, count: u64, price: u64) -> Self {
-        Self { name: name.to_owned(), count, price }
-    }
-
-    pub fn count(&self) -> u64 { self.count }
-    pub fn get_price(&self) -> u64 { &self.price * self.count }
-}
-
+#[derive(new, Getters)]
+#[getset(get = "pub")]
 pub struct ModifierContext<'a> {
     item_id: &'a str,
     item_nbt: &'a ItemNbt,
-}
-
-impl<'a> ModifierContext<'a> {
-    pub fn new(item_id: &'a str, item_nbt: &'a ItemNbt) -> ModifierContext<'a> {
-        Self { item_id, item_nbt }
-    }
-
-    pub fn item_id(&self) -> &str { &self.item_id }
-    pub fn item_nbt(&self) -> &ItemNbt { &self.item_nbt }
 }

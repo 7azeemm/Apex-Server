@@ -1,6 +1,6 @@
-use phf::{phf_map, phf_set, Map, Set};
+use phf::{phf_map, Map};
 
-pub static REFORGE_STONES: Map<&'static str, &'static str> = phf_map! {
+pub const REFORGE_STONES: Map<&'static str, &'static str> = phf_map! {
     "stiff" => "HARDENED_WOOD",
     "trashy" => "OVERFLOWING_TRASH_CAN",
     "salty" => "SALT_CUBE",
@@ -76,90 +76,25 @@ pub static REFORGE_STONES: Map<&'static str, &'static str> = phf_map! {
     "blood_shot" => "SHRIVELED_CORNEA",
 };
 
-pub static EXECLUDE_REFORGES: Set<&'static str> = phf_set! {
-    "none",
-    "fair",
-    "epic",
-    "fast",
-    "gentle",
-    "heroic",
-    "legendary",
-    "odd",
-    "odd_sword",
-    "sharp",
-    "spicy",
-    "awkward",
-    "deadly",
-    "fine",
-    "grand",
-    "hasty",
-    "neat",
-    "rich",
-    "unreal",
-    "clean",
-    "fierce",
-    "heavy",
-    "light",
-    "mythic",
-    "pure",
-    "smart",
-    "titanic",
-    "wise",
-    "astute",
-    "blended",
-    "brilliant",
-    "colossal",
-    "hefty",
-    "honored",
-    "menacing",
-    "soft",
-    "stained",
-    "unyielding",
-    "excellent",
-    "fortunate",
-    "sturdy",
-    "prospector's",
-    "great",
-    "lush",
-    "rugged",
-    "double_bit",
-    "lumberjack",
-    "green_thumb",
-    "robust",
-    "zooming",
-    "peasant's",
-    "rich_bow",
-    "rapid",
-    "unpleasant",
-    "strange",
-    "shaded",
-    "vivid",
-    "zealous",
-    "prospector",
-    "godly",
-    "forceful",
-    "strong",
-    "bizarre",
-    "hurtful",
-    "superior",
-    "itchy",
-    "demonic",
-    "bloody",
-    "shiny",
-    "pleasant",
-    "peasant",
-    "silky",
-    "keen"
-};
+pub const EXCLUDE_REFORGES: &[&str] = &[
+    "none", "fair", "epic", "fast", "gentle", "heroic", "legendary", "odd", "odd_sword", "sharp",
+    "spicy", "awkward", "deadly", "fine", "grand", "hasty", "neat", "rich", "unreal", "clean",
+    "fierce", "heavy", "light", "mythic", "pure", "smart", "titanic", "wise", "astute", "blended",
+    "brilliant", "colossal", "hefty", "honored", "menacing", "soft", "stained", "unyielding",
+    "excellent", "fortunate", "sturdy", "prospector's", "great", "lush", "rugged", "double_bit",
+    "lumberjack", "green_thumb", "robust", "zooming", "peasant's", "rich_bow", "rapid", "unpleasant",
+    "strange", "shaded", "vivid", "zealous", "prospector", "godly", "forceful", "strong", "bizarre",
+    "hurtful", "superior", "itchy", "demonic", "bloody", "shiny", "pleasant", "peasant", "silky", "keen"
+];
 
-pub static NPC_REFORGES: Map<&'static str, u64> = phf_map! {
+pub const NPC_REFORGES: Map<&'static str, u64> = phf_map! {
     "greater_spook" => 10000,
     "moil" => 50000,
     "toil" => 1000000,
     "dirty" => 100000
 };
 
-pub static REFORGES_APPLY_COST: Map<&'static str, &[u64; 7]> = phf_map! {
+pub const REFORGES_APPLY_COST: Map<&'static str, &[u64; 7]> = phf_map! {
     "DEEP_SEA_ORB" => &[50_000, 150_000, 350_000, 600_000, 750_000, 800_000, 0],
     "RED_NOSE" => &[7_500, 15_000, 30_000, 75_000, 150_000, 300_000, 0],
     "NECROMANCER_BROOCH" => &[20_000, 40_000, 80_000, 150_000, 300_000, 600_000, 0],

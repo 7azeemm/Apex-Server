@@ -1,7 +1,7 @@
 #![allow(warnings)]
 mod constants;
 pub mod item_utils;
-mod repo;
+mod repos;
 mod endpoints;
 mod player_data;
 mod live_data;
@@ -14,34 +14,24 @@ mod helpers;
 
 use crate::endpoints::{get_auction_by_auction_id, get_auction_by_item_uuid, get_auctions_by_auctioneer, get_price};
 use crate::live_data::{jacob_contests, mayor_info};
-use crate::player_data::hypixel_data::get_player_info;
-use crate::player_data::player_data_tools::{get_crimson_island_info, get_dungeons_info, get_events_info, get_fishing_info, get_foraging_info, get_garden_info, get_inventory, get_item, get_mining_info, get_misc_info, get_player_overview, get_profile_networth, get_slayer_info};
 use crate::player_data::profile_fetcher::profile_cleaner;
 use crate::prices::{auctions, bazaar, cosmetic_prices};
-use crate::structs::auctions_structs::AuctionManager;
-use crate::structs::item_structs::ItemValue;
-use crate::structs::player_data_structs::{PlayerDataResponse, StringBuilder};
-use crate::utils::get_player_uuid;
-use axum::extract::Path;
-use axum::http::StatusCode;
+use crate::repos::repo_manager;
 use axum::routing::get;
-use axum::{Json, Router};
-use prices::auctions::get_lowest_bin_and_id;
-use prices::bazaar::get_buy_price;
-use prices::item_value_calculator::calculate_item_value;
+use axum::Router;
+use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::collections::HashSet;
 use std::error::Error;
 use std::net::SocketAddr;
-use std::time::Duration;
 use tokio::net::TcpListener;
 use tokio::signal;
-use tokio::time::sleep;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    repo::neu_repo::schedule().await;
+    dotenv().ok();
+
+    repo_manager::schedule().await;
+
     mayor_info::schedule().await;
     jacob_contests::schedule().await;
     bazaar::schedule().await;
@@ -75,13 +65,6 @@ async fn app() {
         .route("/auctions/auctioneer/{auctioneer_id}", get(get_auctions_by_auctioneer));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
-    tracing::info!("Listening on {addr}");
-
-    let listener = TcpListener::bind(addr)
-        .await
-        .expect("Failed to bind to address");
-
-    axum::serve(listener, app)
-        .await
-        .expect("Failed to start server");
+    let listener = TcpListener::bind(addr).await.expect("Failed to bind to address");
+    axum::serve(listener, app).await.expect("Failed to start server");
 }

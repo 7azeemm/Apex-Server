@@ -1,4 +1,6 @@
 use crate::structs::item_structs::{ItemNbt, ItemValue};
+use derive_new::new;
+use getset::Getters;
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -7,8 +9,6 @@ use tokio::sync::RwLock;
 pub struct AuctionManager {
     pub auctions: RwLock<FxHashMap<String, AuctionItem>>,
     pub lowest_bins: RwLock<FxHashMap<String, LowestBinItem>>,
-    pub sorted_item_values: RwLock<FxHashMap<String, Vec<String>>>,
-    pub player_auctions: RwLock<FxHashMap<String, HashSet<String>>>,
     pub to_add: RwLock<FxHashMap<String, AuctionItem>>,
     pub to_keep: RwLock<HashSet<String>>,
 }
@@ -17,9 +17,7 @@ impl AuctionManager {
     pub fn new() -> Self {
         Self {
             auctions: RwLock::new(FxHashMap::with_capacity_and_hasher(60000, Default::default())),
-            lowest_bins: RwLock::new(FxHashMap::with_capacity_and_hasher(12000, Default::default())),
-            sorted_item_values: RwLock::new(FxHashMap::with_capacity_and_hasher(60000, Default::default())),
-            player_auctions: RwLock::new(FxHashMap::with_capacity_and_hasher(25000, Default::default())),
+            lowest_bins: RwLock::new(FxHashMap::with_capacity_and_hasher(4000, Default::default())),
             to_add: RwLock::new(FxHashMap::with_capacity_and_hasher(60000, Default::default())),
             to_keep: RwLock::new(HashSet::with_capacity_and_hasher(60000, Default::default())),
         }
@@ -31,7 +29,8 @@ impl AuctionManager {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Getters)]
+#[getset(get = "pub")]
 pub struct AuctionsResponse {
     success: bool,
     #[serde(rename = "totalPages")]
@@ -43,15 +42,8 @@ pub struct AuctionsResponse {
     auctions: Vec<Auction>,
 }
 
-impl AuctionsResponse {
-    pub fn is_successful(&self) -> bool { self.success }
-    pub fn total_pages(&self) -> u64 { self.total_pages }
-    pub fn total_auctions(&self) -> u64 { self.total_auctions }
-    pub fn last_updated(&self) -> u64 { self.last_updated }
-    pub fn get_auctions(&self) -> &[Auction] { &self.auctions }
-}
-
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Getters)]
+#[getset(get = "pub")]
 pub struct Auction {
     uuid: String,
     auctioneer: String,
@@ -61,16 +53,8 @@ pub struct Auction {
     bin: bool,
 }
 
-impl Auction {
-    pub fn uuid(&self) -> &str { &self.uuid }
-    pub fn auctioneer(&self) -> &str { &self.auctioneer }
-    pub fn item_name(&self) -> &str { &self.item_name }
-    pub fn item_bytes(&self) -> &str { &self.item_bytes }
-    pub fn starting_bid(&self) -> u64 { self.starting_bid }
-    pub fn is_bin(&self) -> bool { self.bin }
-}
-
-#[derive(Clone)]
+#[derive(Clone, Getters)]
+#[getset(get = "pub")]
 pub struct AuctionItem {
     auctioneer: String,
     item_uuid: String,
@@ -84,28 +68,21 @@ pub struct AuctionItem {
 impl AuctionItem {
     pub fn new(auction: &Auction, item_uuid: String, item_id: String, item_nbt: ItemNbt) -> Self {
         Self {
-            auctioneer: (*auction.auctioneer).to_string(),
-            item_name: (*auction.item_name).to_string(),
-            value: ItemValue::new(),
+            auctioneer: auction.auctioneer.clone(),
+            item_name: auction.item_name.clone(),
+            value: ItemValue::default(),
             price: auction.starting_bid,
             item_uuid,
             item_id,
-            item_nbt,
+            item_nbt
         }
     }
-
-    pub fn auctioneer(&self) -> &str { &self.auctioneer }
-    pub fn item_name(&self) -> &str { &self.item_name }
-    pub fn item_uuid(&self) -> &str { &self.item_uuid }
-    pub fn item_id(&self) -> &str { &self.item_id }
-    pub fn item_nbt(&self) -> &ItemNbt { &self.item_nbt }
-    pub fn item_value(&self) -> &ItemValue { &self.value }
-    pub fn price(&self) -> u64 { self.price }
 
     pub fn set_value(&mut self, value: ItemValue) { self.value = value }
 }
 
-#[derive(Clone)]
+#[derive(Clone, new, Getters)]
+#[getset(get = "pub")]
 pub struct LowestBinItem {
     auction_id: String,
     item_id: String,
@@ -114,14 +91,6 @@ pub struct LowestBinItem {
 }
 
 impl LowestBinItem {
-    pub fn new(auction_id: String, item_id: String, price: u64) -> Self {
-        Self { auction_id, item_id, price, base_price: price }
-    }
-    pub fn auction_id(&self) -> &str { &self.auction_id }
-    pub fn item_id(&self) -> &str { &self.item_id }
-    pub fn price(&self) -> u64 { self.price }
-    pub fn base_price(&self) -> u64 { self.base_price }
-
     pub fn set_base_price(&mut self, base_price: u64) {
         self.base_price = base_price;
     }

@@ -7,7 +7,7 @@ use crate::item_utils::{get_pet_info, get_pet_obj, get_pretty_name};
 use crate::live_data::jacob_contests::get_upcoming_contests;
 use crate::live_data::mayor_info::{get_election_over_time_left, get_mayor_info, get_skyblock_date, get_special_mayors_info};
 use crate::player_data::profile_fetcher::{get_garden_data, get_museum_items};
-use crate::prices::bazaar::get_buy_price_u64;
+use crate::prices::bazaar::get_buy_price;
 use crate::prices::cosmetic_prices::get_pet_networth;
 use crate::prices::item_value_calculator::{calculate_item_value, get_pet_full_info};
 use crate::structs::player_data_structs::{PlayerDataResponse, PlayerProfile, StringBuilder};
@@ -435,13 +435,13 @@ pub async fn get_events_info(pdr: &mut PlayerDataResponse) {
     sb.pushln();
 
     let mayor_info = get_mayor_info().await;
-    let mayor = mayor_info.get_mayor();
-    let mayor_perks = mayor.get_perks().keys().map(|s| s.as_str()).collect::<Vec<_>>().join(", ");
-    sb.push(format!("Current Mayor: {} (perks: [{}])", mayor.get_name(), mayor_perks));
+    let mayor = mayor_info.mayor();
+    let mayor_perks = mayor.perks().keys().map(|s| s.as_str()).collect::<Vec<_>>().join(", ");
+    sb.push(format!("Current Mayor: {} (perks: [{}])", mayor.name(), mayor_perks));
 
-    if let Some(minister) = mayor_info.get_minister() {
-        let minister_perk = minister.get_perks().keys().map(|s| s.as_str()).collect::<Vec<_>>().join(", ");
-        sb.push(format!("Current Minister: {} (perks: [{}])", minister.get_name(), minister_perk));
+    if let Some(minister) = mayor_info.minister() {
+        let minister_perk = minister.perks().keys().map(|s| s.as_str()).collect::<Vec<_>>().join(", ");
+        sb.push(format!("Current Minister: {} (perks: [{}])", minister.name(), minister_perk));
     }
 
     sb.pushln();
@@ -449,13 +449,13 @@ pub async fn get_events_info(pdr: &mut PlayerDataResponse) {
     sb.push(get_special_mayors_info());
     sb.pushln();
 
-    if let Some(election) = mayor_info.get_election() {
+    if let Some(election) = mayor_info.election() {
         sb.push("Current Election:".to_owned());
         if election.iter().all(|(_, votes)| votes.is_none()) {
             sb.push(" (Votes are hidden)".to_owned());
         }
         for (mayor, votes) in election.iter() {
-            let mut mayor_str = format!(" - {}", mayor.get_name());
+            let mut mayor_str = format!(" - {}", mayor.name());
             if let Some(votes) = votes {
                 mayor_str.push_str(&format!(" (votes: {})", votes));
             }
@@ -569,7 +569,7 @@ pub async fn get_inventory(pdr: &mut PlayerDataResponse) {
         let mut items: Vec<(&str, u64)> = Vec::new();
 
         for item in inventory {
-            let count = *item.count();
+            let &count = item.count();
             let item_name = item.name();
             match items.iter_mut().find(|(name, _)| *name == item_name) {
                 Some((_, c)) => *c += count,
@@ -617,7 +617,7 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse) {
 
         let mut sacks_value = 0;
         for (item, amount) in storage.sacks() {
-            sacks_value += get_buy_price_u64(item).await.unwrap_or(0) * amount;
+            sacks_value += get_buy_price(item).await.unwrap_or(0) * amount;
         }
         sb.push(format!("Sacks: {} Coins", format_number(sacks_value)));
         total_value += sacks_value;
@@ -634,8 +634,8 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse) {
     let player_uuid = pdr.player_uuid().to_string();
     if let Some(museum_donations) = get_museum_items(&player_uuid, pdr.profile_mut()).await {
         for donation in museum_donations.iter() {
-            if donation.borrowing { continue; };
-            for item in donation.items.iter() {
+            if *donation.borrowing() { continue; };
+            for item in donation.items() {
                 museum_value += calculate_item_value(item.item_id(), item.nbt()).await.value();
             }
         }
@@ -654,7 +654,7 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse) {
     if let Some(essence) = pdr.profile_data().get_object("currencies/essence") {
         for (name, amount) in essence {
             let amount = amount.get_u64("current").unwrap_or(0);
-            let price = get_buy_price_u64(&format!("ESSENCE_{}", name)).await.unwrap_or(0);
+            let price = get_buy_price(&format!("ESSENCE_{}", name)).await.unwrap_or(0);
             essence_value += price * amount;
         }
     }
@@ -680,7 +680,7 @@ fn get_skills(data: &Value, sb: &mut StringBuilder) {
     let mut total_level = 0;
     let mut count = 0;
 
-    for skill in SKILLS {
+    for &skill in SKILLS {
         let (skill_level, skill_line) = get_skill_level(data, skill);
 
         // Exclude cosmetic skills from average
@@ -815,7 +815,7 @@ pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, is_pet: boo
                     sb.push(line);
                 }
                 sb.push(format!("Pet Value: {} Coins", format_number_with_commas(pet_value)));
-                if pet.active() {
+                if *pet.active() {
                     sb.push("The Pet is Active".to_owned());
                 }
             } else {
@@ -847,7 +847,7 @@ pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, is_pet: boo
                 .map(|item| (*item).clone());
 
             if let Some(ref item) = item {
-                let count = *item.count();
+                let &count = item.count();
                 sb.push(match count > 1 {
                     true => format!("Item: {count}x {item_name}"),
                     false => format!("Item: {item_name}")

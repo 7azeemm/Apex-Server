@@ -1,4 +1,4 @@
-use crate::prices::bazaar::get_buy_price_u64;
+use crate::prices::bazaar::get_buy_price;
 use crate::structs::item_structs::{ItemValue, ModifierContext};
 use async_trait::async_trait;
 use fastnbt::Value;
@@ -22,7 +22,7 @@ impl SingleItemModifier {
 #[async_trait]
 impl ModifierHandler for SingleItemModifier {
     async fn calculate_value(&self, _ctx: &ModifierContext<'_>, _attr: &Value, value: &mut ItemValue) {
-        let price = get_buy_price_u64(self.item_id).await;
+        let price = get_buy_price(self.item_id).await;
         value.add_v(&format!("{}: Applied", self.label), price, 1);
     }
 }
@@ -47,13 +47,12 @@ impl ModifierHandler for CountedItemModifier {
             count = count.min(max);
         }
 
-        let price = get_buy_price_u64(self.item_id).await;
-
         let label = match self.max_count {
             Some(max) => format!("{}: {}/{}", self.label, count, max),
             None => format!("{}: {}", self.label, count),
         };
 
+        let price = get_buy_price(self.item_id).await;
         value.add_v(&label, price, count);
     }
 }

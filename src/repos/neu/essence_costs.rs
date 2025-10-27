@@ -1,5 +1,5 @@
 use crate::extensions::json_ext::JsonExt;
-use crate::repo::neu_repo::load_repo_file;
+use crate::repos::neu::neu_repo::load_file;
 use rustc_hash::FxHashMap;
 use std::collections::HashMap;
 use std::sync::LazyLock;
@@ -24,7 +24,7 @@ pub struct StarCost {
 pub async fn load_essence_costs() {
     let start_time = Instant::now();
 
-    match load_repo_file("constants/essencecosts.json").await {
+    match load_file("constants/essencecosts.json").await {
         Ok(serde_json::Value::Object(items)) => {
             let mut essence_costs = ESSENCE_COSTS.write().await;
             essence_costs.clear();
@@ -35,10 +35,10 @@ pub async fn load_essence_costs() {
                 }
             }
 
-            println!("[NEU-Repo] Successfully extracted essence costs in {:.2?}", start_time.elapsed());
+            println!("[NEU-Repo] Loaded essence costs in {:.2?}", start_time.elapsed());
         }
-        Err(err) => println!("[NEU-Repo] Error occurred while extracting essence costs: {:?}", err),
-        _ => println!("[NEU-Repo] Error occurred while extracting essence costs: Invalid JSON format")
+        Err(err) => println!("[NEU-Repo] Error occurred while loading essence costs: {:?}", err),
+        _ => println!("[NEU-Repo] Error occurred while loading essence costs: Invalid JSON format")
     }
 }
 

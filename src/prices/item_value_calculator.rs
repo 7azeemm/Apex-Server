@@ -1,13 +1,13 @@
 use crate::constants::enchantments::{NPC_ENCHANTS, STACKING_ENCHANTS, TIER_FIVE_ENCHANTS, TIER_ONE_ENCHANTS, TIER_THREE_ENCHANTS, UPGRADABLE_ENCHANTS};
 use crate::constants::misc::{GEMSTONES, MASTER_STARS};
-use crate::constants::reforges::{EXECLUDE_REFORGES, NPC_REFORGES, REFORGES_APPLY_COST, REFORGE_STONES};
+use crate::constants::reforges::{EXCLUDE_REFORGES, NPC_REFORGES, REFORGES_APPLY_COST, REFORGE_STONES};
 use crate::extensions::fastnbt_ext::ValueExt;
 use crate::item_utils::{get_item_name, get_item_rarity, get_pet_info, get_pet_obj, get_pretty_name, get_rarity_index};
 use crate::prices::auctions::{get_base_price, get_lowest_bin};
-use crate::prices::bazaar::get_buy_price_u64;
+use crate::prices::bazaar::get_buy_price;
 use crate::prices::cosmetic_prices::{get_cosmetic_price, get_pet_networth};
-use crate::repo::essence_costs::get_essence_costs;
-use crate::repo::gemstone_slots_cost::get_item_gemstone_slots;
+use crate::repos::neu::essence_costs::get_essence_costs;
+use crate::repos::neu::gemstone_slots_cost::get_item_gemstone_slots;
 use crate::structs::item_structs::{ItemNbt, ItemValue, ModifierContext};
 use crate::structs::player_data_structs::Pet;
 use crate::structs::value_calc_structs::{CountedItemModifier, ModifierHandler, SingleItemModifier};
@@ -74,7 +74,7 @@ static MODIFIERS: Lazy<Vec<(&'static str, Box<dyn ModifierHandler>)>> = Lazy::ne
 });
 
 pub async fn calculate_item_value(item_id: &str, item_nbt: &ItemNbt) -> ItemValue {
-    let mut item_value = ItemValue::new();
+    let mut item_value = ItemValue::default();
     let Some(attributes) = item_nbt.get_extra_map() else { return item_value };
     let ctx = ModifierContext::new(item_id, item_nbt);
 
@@ -87,13 +87,13 @@ pub async fn calculate_item_value(item_id: &str, item_nbt: &ItemNbt) -> ItemValu
     }
 
     let price = match get_base_price(item_id).await {
-        None => match get_buy_price_u64(item_id).await {
+        None => match get_buy_price(item_id).await {
             None => get_cosmetic_price(item_id).await.unwrap_or(0),
             Some(p) => p
         }
         Some(p) => p
     };
-    item_value.set_base_value(price * item_nbt.count as u64);
+    item_value.set_base_value(price * item_nbt.count());
 
     for (attr, handler) in MODIFIERS.iter() {
         if attributes.contains_key(*attr) {
@@ -118,7 +118,7 @@ impl ModifierHandler for AbilityScrollModifier {
             value.add("Ability Scrolls:");
             for scroll in scrolls {
                 if let Some(id) = scroll.as_str() {
-                    let price = get_buy_price_u64(&id).await;
+                    let price = get_buy_price(&id).await;
                     value.add_v(&format!(" - {}", get_pretty_name(id)), price, 1);
                 }
             }
@@ -136,11 +136,11 @@ impl ModifierHandler for PotatoBooksModifier {
         let hot_potato_books = min(10, count);
         let fuming_books = max(0, count - 10);
 
-        let price = get_buy_price_u64(POTATO_BOOK_ID).await;
+        let price = get_buy_price(POTATO_BOOK_ID).await;
         value.add_v(&format!("Hot Potato Books: {}/10", hot_potato_books), price, hot_potato_books);
 
         if fuming_books > 0 {
-            let price = get_buy_price_u64(FUMING_BOOK_ID).await;
+            let price = get_buy_price(FUMING_BOOK_ID).await;
             value.add_v(&format!("Fuming Books: {}/5", fuming_books), price, fuming_books);
         }
     }
@@ -160,11 +160,11 @@ impl ModifierHandler for ReforgeModifier {
 }
 
 async fn get_reforge_stone_price(reforge: &str, item_nbt: &ItemNbt) -> Option<u64> {
-    if EXECLUDE_REFORGES.contains(reforge) { return None; }
+    if EXCLUDE_REFORGES.contains(&reforge) { return None; }
 
     if let Some(stone_id) = REFORGE_STONES.get(reforge) {
         let apply_cost = get_apply_cost(stone_id, item_nbt).unwrap_or(0);
-        return get_buy_price_u64(stone_id).await.map(|p| p.add(apply_cost));
+        return get_buy_price(stone_id).await.map(|p| p.add(apply_cost));
     }
 
     NPC_REFORGES.get(reforge).map(|p| *p)
@@ -192,9 +192,9 @@ impl ModifierHandler for EnchantmentsModifier {
             let cool_name = &format!("{} {level}", get_pretty_name(name));
             enchants_list.push(cool_name.to_string());
 
-            if STACKING_ENCHANTS.contains(name) {
+            if STACKING_ENCHANTS.contains(&name.as_str()) {
                 let enchant_id = get_enchantment_id(name, 1);
-                let price = get_buy_price_u64(&enchant_id).await.unwrap_or(0);
+                let price = get_buy_price(&enchant_id).await.unwrap_or(0);
                 enchants_value += price;
                 continue;
             }
@@ -206,17 +206,17 @@ impl ModifierHandler for EnchantmentsModifier {
 
             if let Some(required_item) = UPGRADABLE_ENCHANTS.get(&format!("{}_{}", name, level)) {
                 let downgrade_id = get_enchantment_id(name, level - 1);
-                let downgrade_price = get_buy_price_u64(&downgrade_id).await.unwrap_or(0);
-                let required_item_price = get_buy_price_u64(&*required_item).await.unwrap_or(0);
+                let downgrade_price = get_buy_price(&downgrade_id).await.unwrap_or(0);
+                let required_item_price = get_buy_price(&*required_item).await.unwrap_or(0);
 
                 enchants_value += downgrade_price + required_item_price;
                 continue;
             }
 
             if name == "efficiency" && level > 5 {
-                let item_id = ctx.item_id();
+                let &item_id = ctx.item_id();
                 if item_id != STONK_PICKAXE_ID && item_id != PROMISING_SPADE_ID {
-                    let price = get_buy_price_u64(SILEX_ID).await.unwrap_or(0);
+                    let price = get_buy_price(SILEX_ID).await.unwrap_or(0);
                     enchants_value += price * (level - 5);
                     continue;
                 }
@@ -234,14 +234,14 @@ pub async fn get_enchantment_price(enchant: &str, level: u64) -> Option<u64> {
     let id = get_enchantment_id(&enchant, level);
     let base_level = match () {
         _ if TIER_ONE_ENCHANTS.contains(&&*enchant) => 1,
-        _ if TIER_THREE_ENCHANTS.contains(&&**&enchant) => 3,
-        _ if TIER_FIVE_ENCHANTS.contains(&&**&enchant) => 5,
-        _ => return get_buy_price_u64(&id).await,
+        _ if TIER_THREE_ENCHANTS.contains(&&*enchant) => 3,
+        _ if TIER_FIVE_ENCHANTS.contains(&&*enchant) => 5,
+        _ => return get_buy_price(&id).await,
     };
 
     let steps = level - base_level;
     let base_id = get_enchantment_id(&*enchant, base_level);
-    let base_price = get_buy_price_u64(&base_id).await?;
+    let base_price = get_buy_price(&base_id).await?;
 
     Some(base_price.saturating_mul(u64::pow(2, steps as u32)))
 }
@@ -313,7 +313,7 @@ impl ModifierHandler for GemstonesModifier {
         let mut gemstones_value = 0;
 
         for (gem, count) in gemstones {
-            let price = get_buy_price_u64(&gem).await.unwrap_or(0);
+            let price = get_buy_price(&gem).await.unwrap_or(0);
             gemstones_value += price;
 
             let gem_name = get_pretty_name(&*gem.replace("_GEM", "_GEMSTONE"));
@@ -330,7 +330,7 @@ impl ModifierHandler for GemstonesModifier {
                                 let count: u64 = count.parse().unwrap_or(0);
                                 gemstones_value += match item {
                                     "SKYBLOCK_COIN" => count,
-                                    _ => get_buy_price_u64(item).await.unwrap_or(get_lowest_bin(item).await.unwrap_or(0))
+                                    _ => get_buy_price(item).await.unwrap_or(get_lowest_bin(item).await.unwrap_or(0))
                                 };
                             }
                         }
@@ -455,7 +455,7 @@ impl ModifierHandler for BoostersModifier {
             for booster in boosters {
                 if let Some(booster) = booster.as_str() {
                     let id = format!("{}_BOOSTER", booster.to_uppercase());
-                    let price = get_buy_price_u64(&id).await;
+                    let price = get_buy_price(&id).await;
                     value.add_v(&format!(" - {}", get_pretty_name(&id)), price, 1);
                 }
             }
@@ -522,10 +522,10 @@ impl ModifierHandler for UpgradeLevelModifier {
         }
 
         let mut stars_value = 0;
-        stars_value += get_buy_price_u64(&essence_id).await.unwrap_or(0);
+        stars_value += get_buy_price(&essence_id).await.unwrap_or(0);
 
         for (item, count) in items_cost {
-            stars_value += get_buy_price_u64(item).await.unwrap_or(0) * count;
+            stars_value += get_buy_price(item).await.unwrap_or(0) * count;
         }
 
         value.add_v(&format!("Stars: {regular_stars}/{max_stars}"), Some(stars_value), 1);

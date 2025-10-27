@@ -1,6 +1,6 @@
 use crate::prices::auctions;
 use crate::prices::auctions::get_lowest_bin_and_id;
-use crate::prices::bazaar::get_buy_price;
+use crate::prices::bazaar::get_buy_price_as_float;
 use crate::structs::auctions_structs::AuctionItemResponse;
 use axum::extract::Path;
 use axum::http::StatusCode;
@@ -35,7 +35,7 @@ pub async fn get_price(axum::extract::Query(q): axum::extract::Query<PriceQuery>
     let (price, auction_id, source) = match q.source.as_deref() {
         Some("bazaar") => {
             // Check only bazaar
-            match get_buy_price(item_id).await {
+            match get_buy_price_as_float(item_id).await {
                 Some(bazaar_price) => (bazaar_price, None, "bazaar"),
                 None => return Err(StatusCode::NOT_FOUND),
             }
@@ -49,7 +49,7 @@ pub async fn get_price(axum::extract::Query(q): axum::extract::Query<PriceQuery>
         }
         _ => {
             // Default behavior: check both (bazaar first, then auction)
-            match get_buy_price(item_id).await {
+            match get_buy_price_as_float(item_id).await {
                 Some(bazaar_price) => (bazaar_price, None, "bazaar"),
                 None => {
                     match get_lowest_bin_and_id(item_id).await {

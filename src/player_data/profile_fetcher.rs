@@ -98,7 +98,7 @@ pub async fn get_player_profile(username: &str, player_uuid: &str, profile_name:
     }
 
     let mut player_profiles = PLAYER_PROFILES.write().await;
-    let mut player_data = player_profiles.entry(player_uuid.to_owned()).or_insert(PlayerData::new());
+    let mut player_data = player_profiles.entry(player_uuid.to_owned()).or_insert(PlayerData::default());
     player_data.update(info, selected_profile);
 
     if let Some(profile) = target_profile {
@@ -149,7 +149,7 @@ pub async fn get_museum_items<'a>(player_uuid: &str, profile: &'a mut PlayerProf
 
                         let slot = data.get_str("featured_slot").unwrap_or("").to_owned();
                         let borrowing = data.get_bool("borrowing").unwrap_or(false);
-                        let donation = Donation { id: id.to_string(), slot, borrowing, items };
+                        let donation = Donation::new(id.to_owned(), slot, borrowing, items);
                         donations_list.push(donation);
                     }
                     profile.set_museum_data(donations_list);
@@ -210,7 +210,7 @@ pub async fn get_profiles_info(player_uuid: &str, sb: &mut StringBuilder) {
 }
 
 fn scan_storage(data: &Value) -> Storage {
-    let mut storage = Storage::empty();
+    let mut storage = Storage::default();
     let Some(inventory) = data.get_object("inventory") else { return storage };
 
     let get_items = |key: &str, path: &str| -> Vec<Item> {
@@ -303,7 +303,7 @@ fn scan_setups(storage: &Storage) -> HashMap<SetupType, PlayerSetup> {
     ];
 
     for setup_type in setups_list {
-        let mut player_setup = PlayerSetup::new();
+        let mut player_setup = PlayerSetup::default();
         let setup = setup_type.get_setup();
 
         // Armor
@@ -386,7 +386,7 @@ fn scan_setups(storage: &Storage) -> HashMap<SetupType, PlayerSetup> {
 
         if let Some(pet) = pet {
             if let Some(pet) = storage.pets().iter().find(|p| p.name() == pet) {
-                let (level, _) = get_pet_level(pet.name(), pet.tier(), pet.xp() as u64);
+                let (level, _) = get_pet_level(pet.name(), pet.tier(), *pet.xp() as u64);
                 pet_info = Some(format!("[Lvl {}] {} {}", level, get_pretty_name(pet.tier()), get_pretty_name(pet.name())));
             }
         }
@@ -459,12 +459,11 @@ fn get_all_container_items(container: &Value, path: &str) -> Vec<Option<Item>> {
 }
 
 fn get_item_obj(item: ItemNbt, path: &str, slot: usize) -> Option<Item> {
-    let count = item.count;
     let item_id = get_item_id(&item)?;
     let item_name = get_item_name(&item)?;
     let custom_id = format!("{item_id}-{path}_{slot}");
 
-    Some(Item::new(custom_id, item_id, item_name, count as u64, item))
+    Some(Item::new(custom_id, item_id, item_name, item.count(), item))
 }
 
 fn organize_wardrobe_sets(wardrobe_items: Vec<Option<Item>>) -> Vec<[Option<Item>; 4]> {

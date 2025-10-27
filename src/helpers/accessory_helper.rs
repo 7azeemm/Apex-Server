@@ -1,7 +1,7 @@
 use crate::constants::misc::RARITIES;
 use crate::item_utils::{get_item_rarity, get_rarity_index};
-use crate::repo::items::ACCESSORIES;
-use crate::repo::talisman_upgrades::{get_talisman_upgrades, IGNORED_TALISMANS};
+use crate::repos::neu::items::ACCESSORIES;
+use crate::repos::neu::talisman_upgrades::{get_talisman_upgrades, IGNORED_TALISMANS};
 use crate::structs::player_data_structs::{PlayerDataResponse, StringBuilder};
 use std::collections::{HashMap, HashSet};
 

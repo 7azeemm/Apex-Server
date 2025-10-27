@@ -63,7 +63,7 @@ pub fn get_item_id(item_nbt: &ItemNbt) -> Option<String> {
 }
 
 pub fn get_item_name(item_nbt: &ItemNbt) -> Option<String> {
-    let display = item_nbt.tag.as_ref()?.display.as_ref()?.as_compound()?;
+    let display = item_nbt.get_display_map()?;
     let name = display.get("Name")?.as_str().map(|s| s.to_string())?;
 
     let clean_name = strip_formatting(&name);
@@ -84,7 +84,7 @@ pub fn get_item_name(item_nbt: &ItemNbt) -> Option<String> {
 }
 
 pub fn get_item_rarity(item_nbt: &ItemNbt) -> Option<String> {
-    let display = item_nbt.tag.as_ref()?.display.as_ref()?.as_compound()?;
+    let display = item_nbt.get_display_map()?;
     let lore = display.get("Lore")?.as_list()?;
     let last_line = lore.last()?.as_str()?.replace("SHINY ", "");
     let mut stripped_line = strip_formatting(&last_line);
@@ -186,7 +186,7 @@ pub fn get_pet_level(name: &str, rarity: &str, pet_xp: u64) -> (u64, Option<u64>
 pub fn get_pet_info(pet: &Pet) -> Option<String> {
     let pet_name = pet.name();
     let pet_tier = pet.tier();
-    let (level, _) = get_pet_level(pet_name, pet_tier, pet.xp() as u64);
+    let (level, _) = get_pet_level(pet_name, pet_tier, *pet.xp() as u64);
 
     Some(format!("[Lvl {level}] {} {}", get_pretty_name(pet_tier), get_pretty_name(pet_name)))
 }

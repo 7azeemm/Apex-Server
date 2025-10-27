@@ -1,4 +1,4 @@
-use crate::repo::neu_repo::load_repo_file;
+use crate::repos::neu::neu_repo::load_file;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::sync::LazyLock;
@@ -11,7 +11,7 @@ pub static IGNORED_TALISMANS: LazyLock<RwLock<HashSet<String>>> = LazyLock::new(
 pub async fn load_talisman_upgrades() {
     let start_time = Instant::now();
 
-    match load_repo_file("constants/misc.json").await {
+    match load_file("constants/misc.json").await {
         Ok(Value::Object(items)) => {
             if let Some(talisman_upgrades) = items.get("talisman_upgrades").and_then(|m| m.as_object()) {
                 let talisman_upgrades: HashMap<String, Vec<String>> = talisman_upgrades.iter()
@@ -39,10 +39,10 @@ pub async fn load_talisman_upgrades() {
                 *list = ignored_talismans;
             }
 
-            println!("[NEU-Repo] Successfully extracted talisman upgrades in {:.2?}", start_time.elapsed());
+            println!("[NEU-Repo] Loaded talisman upgrades in {:.2?}", start_time.elapsed());
         }
-        Err(err) => println!("[NEU-Repo] Error occurred while extracting talisman upgrades: {:?}", err),
-        _ => println!("[NEU-Repo] Error occurred while extracting talisman upgrades: Invalid JSON format")
+        Err(err) => println!("[NEU-Repo] Error occurred while loading talisman upgrades: {:?}", err),
+        _ => println!("[NEU-Repo] Error occurred while loading talisman upgrades: Invalid JSON format")
     }
 }
 

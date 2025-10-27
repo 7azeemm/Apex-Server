@@ -47,7 +47,7 @@ pub async fn get_cosmetic_price(id: &str) -> Option<u64> {
 }
 
 pub async fn get_pet_networth(pet: &Pet) -> u64 {
-    let (level, _) = get_pet_level(pet.name(), pet.tier(), pet.xp() as u64);
+    let (level, _) = get_pet_level(pet.name(), pet.tier(), *pet.xp() as u64);
     let level = match level {
         0..100 => 1,
         100..200 => 100,

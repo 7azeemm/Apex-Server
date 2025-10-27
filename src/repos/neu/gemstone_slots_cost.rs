@@ -1,4 +1,4 @@
-use crate::repo::neu_repo::load_repo_file;
+use crate::repos::neu::neu_repo::load_file;
 use rustc_hash::FxHashMap;
 use std::sync::LazyLock;
 use tokio::sync::RwLock;
@@ -9,7 +9,7 @@ static GEMSTONE_SLOT_COSTS: LazyLock<RwLock<FxHashMap<String, FxHashMap<String, 
 pub async fn load_gemstone_slot_costs() {
     let start_time = Instant::now();
 
-    match load_repo_file("constants/gemstonecosts.json").await {
+    match load_file("constants/gemstonecosts.json").await {
         Ok(serde_json::Value::Object(items)) => {
             let mut list = GEMSTONE_SLOT_COSTS.write().await;
             list.clear();
@@ -43,10 +43,10 @@ pub async fn load_gemstone_slot_costs() {
                 }
             }
 
-            println!("[NEU-Repo] Successfully extracted gemstone slot costs in {:.2?}", start_time.elapsed());
+            println!("[NEU-Repo] Loaded gemstone slot costs in {:.2?}", start_time.elapsed());
         }
-        Err(err) => println!("[NEU-Repo] Error occurred while extracting gemstone slot costs: {:?}", err),
-        _ => println!("[NEU-Repo] Error occurred while extracting gemstone slot costs: Invalid JSON format")
+        Err(err) => println!("[NEU-Repo] Error occurred while loading gemstone slot costs: {:?}", err),
+        _ => println!("[NEU-Repo] Error occurred while loading gemstone slot costs: Invalid JSON format")
     }
 }
 

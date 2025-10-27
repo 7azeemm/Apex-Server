@@ -1,6 +1,6 @@
-use phf::{phf_map, phf_set, Map, Set};
+use phf::{phf_map, Map};
 
-pub static STACKING_ENCHANTS: Set<&'static str> = phf_set! {
+pub const STACKING_ENCHANTS: &[&str] = &[
     "champion",
     "compact",
     "cultivating",
@@ -8,13 +8,13 @@ pub static STACKING_ENCHANTS: Set<&'static str> = phf_set! {
     "hecatomb",
     "toxophilite",
     "absorb"
-};
+];
 
-pub static NPC_ENCHANTS: Map<&'static str, u64> = phf_map! {
+pub const NPC_ENCHANTS: Map<&'static str, u64> = phf_map! {
     "great_spook" => 30000,
 };
 
-pub static UPGRADABLE_ENCHANTS: Map<&'static str, &'static str> = phf_map! {
+pub const UPGRADABLE_ENCHANTS: Map<&'static str, &'static str> = phf_map! {
     "pesterminator_6" => "PESTHUNTING_GUIDE",
     "charm_6" => "CHAIN_END_TIMES",
     "scavenger_6" => "GOLDEN_BOUNTY",
@@ -27,12 +27,12 @@ pub static UPGRADABLE_ENCHANTS: Map<&'static str, &'static str> = phf_map! {
     "bane_of_arthropods_7" => "ENSNARED"
 };
 
-pub static TIER_ONE_ENCHANTS: &[&str] = &["CHARM", "DIVINE_GIFT", "CORRUPTION", "GREEN_THUMB", "ICE_COLD", "LAPIDARY",
+pub const TIER_ONE_ENCHANTS: &[&str] = &["CHARM", "DIVINE_GIFT", "CORRUPTION", "GREEN_THUMB", "ICE_COLD", "LAPIDARY",
     "OVERLOAD", "PALEONTOLOGIST", "PRISTINE", "SCUBA", "SMARTY_PANTS", "SMOLDERING", "TIDAL", "ULTIMATE_CHIMERA",
     "ULTIMATE_REITERATE", "ULTIMATE_FATAL_TEMPO", "ULTIMATE_FLASH", "ULTIMATE_INFERNO", "ULTIMATE_REFRIGERATE",
     "ULTIMATE_REND", "ULTIMATE_LEGION", "ULTIMATE_SOUL_EATER", "ULTIMATE_SWARM", "ULTIMATE_WISE", "ULTIMATE_WISDOM"
 ];
 
-pub static TIER_THREE_ENCHANTS: &[&str] = &["ULTIMATE_BOBBIN_TIME", "BIG_BRAIN", "COUNTER_STRIKE", "FOREST_PLEDGE"];
+pub const TIER_THREE_ENCHANTS: &[&str] = &["ULTIMATE_BOBBIN_TIME", "BIG_BRAIN", "COUNTER_STRIKE", "FOREST_PLEDGE"];
 
-pub static TIER_FIVE_ENCHANTS: &[&str] = &["FEROCIOUS_MANA", "HARDENED_MANA", "MANA_VAMPIRE", "STRONG_MANA"];
+pub const TIER_FIVE_ENCHANTS: &[&str] = &["FEROCIOUS_MANA", "HARDENED_MANA", "MANA_VAMPIRE", "STRONG_MANA"];

@@ -56,14 +56,14 @@ async fn update() -> Result<u64, Box<dyn Error + Send + Sync>> {
     let start_time = Instant::now();
 
     let first_page = fetch_page(0).await?;
-    let total_pages = first_page.total_pages();
-    let total_auctions = first_page.total_auctions();
-    let last_updated = first_page.last_updated();
+    let total_pages = *first_page.total_pages();
+    let total_auctions = *first_page.total_auctions();
+    let last_updated = *first_page.last_updated();
 
     println!("[Auctions] Fetching {} auctions in {} pages...", total_auctions, total_pages);
 
     AUCTION_MANAGER.start_update().await;
-    process_page(first_page.get_auctions()).await;
+    process_page(first_page.auctions()).await;
 
     let mut tasks = FuturesUnordered::new();
     let mut next_page = 1;
@@ -74,7 +74,7 @@ async fn update() -> Result<u64, Box<dyn Error + Send + Sync>> {
             let page = next_page;
             tasks.push(tokio::spawn(async move {
                 match fetch_page(page).await {
-                    Ok(page_data) => { process_page(page_data.get_auctions()).await; }
+                    Ok(page_data) => { process_page(page_data.auctions()).await; }
                     Err(e) => eprintln!("[Auctions] Failed to fetch page {}: {}", page, e)
                 }
             }));
@@ -103,7 +103,7 @@ async fn fetch_page(page: u64) -> Result<AuctionsResponse, Box<dyn Error + Send 
         if let Ok(resp) = send_raw_http_request(&format!("{API_ENDPOINT}?page={page}")).await {
             let page_response: AuctionsResponse = serde_json::from_str(&resp)?;
 
-            if page_response.is_successful() {
+            if *page_response.success() {
                 return Ok(page_response);
             }
         }
@@ -119,7 +119,7 @@ async fn process_page(auctions: &[Auction]) {
 }
 
 async fn process_auction(auction: &Auction) {
-    if !auction.is_bin() { return; }
+    if !auction.bin() { return; }
     let auction_id = auction.uuid();
 
     AUCTION_MANAGER.to_keep.write().await.insert(auction_id.to_owned());
@@ -155,12 +155,12 @@ async fn update_lowest_bin_list() {
         let item_id = auction.item_id();
         updates.entry(item_id)
             .and_modify(|existing: &mut (&str, u64)| {
-                let price = auction.price();
+                let &price = auction.price();
                 if price < existing.1 {
                     *existing = (auction_id, price);
                 }
             })
-            .or_insert((auction_id, auction.price()));
+            .or_insert((auction_id, *auction.price()));
     }
 
     let mut lowest_bins = AUCTION_MANAGER.lowest_bins.write().await;
@@ -169,7 +169,7 @@ async fn update_lowest_bin_list() {
     for (item_id, (auction_id, price)) in updates {
         lowest_bins.insert(
             item_id.to_owned(),
-            LowestBinItem::new(auction_id.to_owned(), item_id.to_owned(), price),
+            LowestBinItem::new(auction_id.to_owned(), item_id.to_owned(), price, price),
         );
     }
 }
@@ -182,7 +182,7 @@ async fn calculate_base_prices() {
         for (_, lowest_bin_item) in lowest_bins.iter() {
             to_update.push((
                 lowest_bin_item.auction_id().to_owned(),
-                lowest_bin_item.price(),
+                *lowest_bin_item.price(),
             ));
         }
     }
@@ -190,7 +190,7 @@ async fn calculate_base_prices() {
     for (auction_id, price) in to_update {
         if let Some(mut auction) = AUCTION_MANAGER.auctions.write().await.get_mut(&auction_id) {
             calc_auction_value(&mut auction).await;
-            let modifiers_value = auction.item_value().modifiers_value();
+            let modifiers_value = auction.value().modifiers_value();
 
             if let Some(mut lowest_bin_item) = AUCTION_MANAGER.lowest_bins.write().await.get_mut(&auction_id) {
                 lowest_bin_item.set_base_price(price - modifiers_value);
@@ -214,15 +214,15 @@ async fn calc_auction_value(auction: &mut AuctionItem) {
 }
 
 pub async fn get_base_price(item_id: &str) -> Option<u64> {
-    AUCTION_MANAGER.lowest_bins.read().await.get(item_id).map(|i| i.base_price())
+    AUCTION_MANAGER.lowest_bins.read().await.get(item_id).map(|i| *i.base_price())
 }
 
 pub async fn get_lowest_bin(item_id: &str) -> Option<u64> {
-    AUCTION_MANAGER.lowest_bins.read().await.get(item_id).map(|i| i.price())
+    AUCTION_MANAGER.lowest_bins.read().await.get(item_id).map(|i| *i.price())
 }
 
 pub async fn get_lowest_bin_and_id(item_id: &str) -> Option<(u64, String)> {
-    AUCTION_MANAGER.lowest_bins.read().await.get(item_id).map(|i| (i.price(), i.auction_id().to_owned()))
+    AUCTION_MANAGER.lowest_bins.read().await.get(item_id).map(|i| (*i.price(), i.auction_id().to_owned()))
 }
 
 pub async fn get_auction_by_id(auction_id: &str) -> Option<AuctionItem> {
@@ -240,7 +240,7 @@ pub async fn get_auctions_by_player(auctioneer_id: &str) -> Vec<AuctioneerAuctio
         .map(|(id, auction)| AuctioneerAuctionItem {
             auction_id: id.clone(),
             item_name: auction.item_name().to_owned(),
-            price: auction.price(),
+            price: *auction.price(),
         })
         .collect()
 }

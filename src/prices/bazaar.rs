@@ -51,30 +51,30 @@ async fn update() -> Result<u64, Box<dyn std::error::Error>> {
     let resp = send_raw_http_request(API_ENDPOINT).await?;
     let bazaar_response: BazaarResponse = serde_json::from_str(&resp)?;
 
-    if !bazaar_response.is_successful() {
+    if !*bazaar_response.success() {
         return Err("[Bazaar] API Request was unsuccessful".into());
     }
 
-    let products_len = bazaar_response.get_products_len();
-    let last_updated = bazaar_response.last_updated();
+    let products = bazaar_response.products();
+    let &last_updated = bazaar_response.last_updated();
 
     let mut bazaar = BAZAAR.write().await;
-    for (id, data) in bazaar_response.get_products() {
-        bazaar.insert(id, PriceData::new(data.buy_price(), data.sell_price()));
+    for (id, data) in products {
+        bazaar.insert(id.clone(), PriceData::new(data.buy_price(), data.sell_price()));
     }
 
-    println!("[Bazaar] Updated {} items in {:.2?}.", products_len, start_time.elapsed());
+    println!("[Bazaar] Updated {} items in {:.2?}.", products.len(), start_time.elapsed());
     Ok(last_updated)
 }
 
-pub async fn get_buy_price_u64(id: &str) -> Option<u64> {
-    BAZAAR.read().await.get(id).map(|p| p.get_buy_price() as u64)
+pub async fn get_buy_price(id: &str) -> Option<u64> {
+    BAZAAR.read().await.get(id).map(|p| *p.buy_price() as u64)
 }
 
-pub async fn get_buy_price(id: &str) -> Option<f64> {
-    BAZAAR.read().await.get(id).map(|p| p.get_buy_price())
+pub async fn get_buy_price_as_float(id: &str) -> Option<f64> {
+    BAZAAR.read().await.get(id).map(|p| *p.buy_price())
 }
 
 pub async fn get_sell_price(id: &str) -> Option<f64> {
-    BAZAAR.read().await.get(id).map(|p| p.get_sell_price())
+    BAZAAR.read().await.get(id).map(|p| *p.sell_price())
 }

@@ -10,11 +10,10 @@ use tokio::sync::{Notify, RwLock};
 use tokio::time::{interval_at, Instant};
 
 static DATA_WAITER: Notify = Notify::const_new();
-static MAYOR_INFO: LazyLock<RwLock<MayorInfo>> = LazyLock::new(|| RwLock::new(MayorInfo::empty()));
+static MAYOR_INFO: LazyLock<RwLock<MayorInfo>> = LazyLock::new(|| RwLock::new(MayorInfo::default()));
 const MAYOR_ENDPOINT: &str = "https://api.hypixel.net/v2/resources/skyblock/election";
 const THRESHOLD: u64 = 300;
 const REAL_HOURS_PER_SB_YEAR: i64 = 124;
-const REAL_HOURS_PER_DAY: f64 = REAL_HOURS_PER_SB_YEAR as f64 / 12.0 / 31.0;
 const ELECTION_OFFSET_HOURS: i64 = 29;
 const ELECTION_OFFSET_MINS: i64 = 20;
 const SB_START_TIMESTAMP: i64 = 1560275700; // Hypixel SkyBlock release timestamp (2019-06-11 11:15 UTC)
@@ -105,8 +104,7 @@ fn parse_perks(perks_array: Option<&Vec<serde_json::Value>>) -> HashMap<String, 
 }
 
 pub async fn get_mayor_info() -> MayorInfo {
-    let data = MAYOR_INFO.read().await;
-    data.clone()
+    MAYOR_INFO.read().await.clone()
 }
 
 pub fn get_skyblock_date() -> String {

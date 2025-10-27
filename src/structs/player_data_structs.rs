@@ -2,6 +2,8 @@ use crate::constants::setups::SetupType;
 use crate::player_data::profile_fetcher::get_player_profile;
 use crate::structs::item_structs::ItemNbt;
 use crate::utils::get_player_uuid;
+use derive_new::new;
+use getset::Getters;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -48,7 +50,7 @@ impl StringBuilder {
     }
 }
 
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct PlayerData {
     profiles: HashMap<String, PlayerProfile>,
     profiles_info: HashMap<String, (String, String)>,
@@ -56,10 +58,6 @@ pub struct PlayerData {
 }
 
 impl PlayerData {
-    pub fn new() -> Self {
-        Self { profiles: HashMap::new(), profiles_info: HashMap::new(), selected_profile: None }
-    }
-
     pub fn profiles(&self) -> &HashMap<String, PlayerProfile> { &self.profiles }
     pub fn profiles_info(&self) -> &HashMap<String, (String, String)> { &self.profiles_info }
     pub fn selected_profile(&self) -> &Option<String> { &self.selected_profile }
@@ -144,15 +142,17 @@ impl PlayerProfile {
     pub fn set_museum_data(&mut self, data: Vec<Donation>) { self.museum = Some(data); }
 }
 
-#[derive(Clone)]
+#[derive(Clone, new, Getters)]
+#[getset(get = "pub")]
 pub struct Donation {
-    pub id: String,
-    pub slot: String,
-    pub borrowing: bool,
-    pub items: Vec<Item>,
+    id: String,
+    slot: String,
+    borrowing: bool,
+    items: Vec<Item>,
 }
 
-#[derive(Clone)]
+#[derive(Default, Clone, Getters)]
+#[getset(get = "pub")]
 pub struct Storage {
     inventory: Vec<Item>,
     ender_chest: Vec<Item>,
@@ -167,21 +167,6 @@ pub struct Storage {
 }
 
 impl Storage {
-    pub fn empty() -> Self {
-        Self { inventory: Vec::new(), ender_chest: Vec::new(), backpacks: Vec::new(), armor: Vec::new(), equipment: Vec::new(), wardrobe: Vec::new(), accessories: Vec::new(), vault: Vec::new(), sacks: HashMap::new(), pets: Vec::new() }
-    }
-
-    pub fn inventory(&self) -> &Vec<Item> { &self.inventory }
-    pub fn ender_chest(&self) -> &Vec<Item> { &self.ender_chest }
-    pub fn backpacks(&self) -> &Vec<Item> { &self.backpacks }
-    pub fn armor(&self) -> &Vec<Item> { &self.armor }
-    pub fn equipment(&self) -> &Vec<Item> { &self.equipment }
-    pub fn wardrobe(&self) -> &Vec<[Option<Item>; 4]> { &self.wardrobe }
-    pub fn accessories(&self) -> &Vec<Item> { &self.accessories }
-    pub fn vault(&self) -> &Vec<Item> { &self.vault }
-    pub fn sacks(&self) -> &HashMap<String, u64> { &self.sacks }
-    pub fn pets(&self) -> &Vec<Pet> { &self.pets }
-
     pub fn add_inventory(&mut self, inventory: Vec<Item>) { self.inventory.extend(inventory); }
     pub fn add_ender_chest(&mut self, ender_chest: Vec<Item>) { self.ender_chest.extend(ender_chest); }
     pub fn add_backpacks(&mut self, backpacks: Vec<Item>) { self.backpacks.extend(backpacks); }
@@ -217,7 +202,8 @@ impl Storage {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, new, Getters)]
+#[getset(get = "pub")]
 pub struct Pet {
     name: String,
     tier: String,
@@ -227,41 +213,18 @@ pub struct Pet {
     active: bool,
 }
 
-impl Pet {
-    pub fn new(name: String, tier: String, xp: f64, held_item: Option<String>, skin: Option<String>, active: bool) -> Self {
-        Self { name, tier, xp, held_item, skin, active }
-    }
-
-    pub fn name(&self) -> &str { &self.name }
-    pub fn tier(&self) -> &str { &self.tier }
-    pub fn xp(&self) -> f64 { self.xp }
-    pub fn held_item(&self) -> &Option<String> { &self.held_item }
-    pub fn skin(&self) -> &Option<String> { &self.skin }
-    pub fn active(&self) -> bool { self.active }
-}
-
-#[derive(Clone)]
+#[derive(Clone, new, Getters)]
+#[getset(get = "pub")]
 pub struct Item {
-    custom_id: String,
+    id: String,
     item_id: String,
     name: String,
     count: u64,
     nbt: ItemNbt,
 }
 
-impl Item {
-    pub fn new(custom_id: String, item_id: String, name: String, count: u64, nbt: ItemNbt) -> Self {
-        Self { custom_id, item_id, name, count, nbt }
-    }
-
-    pub fn id(&self) -> &str { &self.custom_id }
-    pub fn item_id(&self) -> &str { &self.item_id }
-    pub fn name(&self) -> &str { &self.name }
-    pub fn count(&self) -> &u64 { &self.count }
-    pub fn nbt(&self) -> &ItemNbt { &self.nbt }
-}
-
-#[derive(Clone)]
+#[derive(Default, Clone, Getters)]
+#[getset(get = "pub")]
 pub struct PlayerSetup {
     armor: Vec<String>,
     equipment: Vec<String>,
@@ -270,19 +233,8 @@ pub struct PlayerSetup {
 }
 
 impl PlayerSetup {
-    pub fn new() -> PlayerSetup {
-        PlayerSetup { armor: Vec::new(), equipment: Vec::new(), tools: Vec::new(), pet: String::new() }
-    }
-
-    pub fn armor(&self) -> &Vec<String> { &self.armor }
-    pub fn equipment(&self) -> &Vec<String> { &self.equipment }
-    pub fn tools(&self) -> &Vec<String> { &self.tools }
-    pub fn pet(&self) -> &String { &self.pet }
-
     pub fn add_armor(&mut self, armor: Vec<String>) { &self.armor.extend(armor); }
     pub fn add_equipment(&mut self, equipment: Vec<String>) { &self.equipment.extend(equipment); }
     pub fn add_tool(&mut self, tool: String) { &self.tools.push(tool); }
     pub fn add_pet(&mut self, pet: String) { &self.pet.push_str(&pet); }
 }
-
-//TODO: remove all pubs

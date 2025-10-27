@@ -50,7 +50,7 @@ pub struct Setup {
     pub pets: &'static [&'static str],
 }
 
-pub static MINING_SETUP: Setup = Setup {
+pub const MINING_SETUP: Setup = Setup {
     armor: &[
         &["DIVAN_HELMET", "DIVAN_CHESTPLATE", "DIVAN_LEGGINGS", "DIVAN_BOOTS"],
         &["SORROW_HELMET", "SORROW_CHESTPLATE", "SORROW_LEGGINGS", "SORROW_BOOTS"],
@@ -71,7 +71,7 @@ pub static MINING_SETUP: Setup = Setup {
     pets: &["SCATHA", "GLACITE_GOLEM", "BAL", "MOLE", "SILVERFISH"],
 };
 
-pub static FARMING_SETUP: Setup = Setup {
+pub const FARMING_SETUP: Setup = Setup {
     armor: &[
         &["", "", "", "RANCHERS_BOOTS"],
         &["FERMENTO_HELMET", "FERMENTO_CHESTPLATE", "FERMENTO_LEGGINGS", "FERMENTO_BOOTS"],
@@ -100,7 +100,7 @@ pub static FARMING_SETUP: Setup = Setup {
     pets: &["ELEPHANT", "MOOSHROOM_COW", "HEDGEHOG", "SLUG", "MOSQUITO", "RABBIT"],
 };
 
-pub static FORAGING_SETUP: Setup = Setup {
+pub const FORAGING_SETUP: Setup = Setup {
     armor: &[
         &["FIG_HELMET", "FIG_CHESTPLATE", "FIG_LEGGINGS", "FIG_BOOTS"],
         &["CANOPY_HELMET", "CANOPY_CHESTPLATE", "CANOPY_LEGGINGS", "CANOPY_BOOTS"],
@@ -111,7 +111,7 @@ pub static FORAGING_SETUP: Setup = Setup {
     pets: &["JADE_DRAGON", "FROG", "MONKEY", "OCELOT"],
 };
 
-pub static FISHING_SETUP: Setup = Setup {
+pub const FISHING_SETUP: Setup = Setup {
     armor: &[
         &["MAGMA_LORD_HELMET", "MAGMA_LORD_CHESTPLATE", "MAGMA_LORD_LEGGINGS", "MAGMA_LORD_BOOTS"],
         &["THUNDER_HELMET", "THUNDER_CHESTPLATE", "THUNDER_LEGGINGS", "THUNDER_BOOTS"],
@@ -143,9 +143,9 @@ pub static FISHING_SETUP: Setup = Setup {
     pets: &["FLYING_FISH", "HERMIT_CRAB", "SQUID", "AMMONITE", "MEGALODON", "REINDEER", "DOLPHIN"],
 };
 
-static DUNGEON_EQUIPMENT: &[&str; 4] = &["BONE_NECKLACE", "SHADOW_ASSASSIN_CLOAK", "ADAPTIVE_BELT", "SOULWEAVER_GLOVES"];
+const DUNGEON_EQUIPMENT: &[&str; 4] = &["BONE_NECKLACE", "SHADOW_ASSASSIN_CLOAK", "ADAPTIVE_BELT", "SOULWEAVER_GLOVES"];
 
-pub static ARCHER_SETUP: Setup = Setup {
+pub const ARCHER_SETUP: Setup = Setup {
     armor: &[
         &["POWER_WITHER_HELMET", "POWER_WITHER_CHESTPLATE", "POWER_WITHER_LEGGINGS", "POWER_WITHER_BOOTS"],
         &["SPEED_WITHER_HELMET", "SPEED_WITHER_CHESTPLATE", "SPEED_WITHER_LEGGINGS", "SPEED_WITHER_BOOTS"],
@@ -161,7 +161,7 @@ pub static ARCHER_SETUP: Setup = Setup {
     pets: &["GOLDEN_DRAGON", "ENDER_DRAGON", "WITHER_SKELETON", "SKELETON", "BABY_YETI", "LION", "TIGER"],
 };
 
-pub static BERSERKER_SETUP: Setup = Setup {
+pub const BERSERKER_SETUP: Setup = Setup {
     armor: &[
         &["POWER_WITHER_HELMET", "POWER_WITHER_CHESTPLATE", "POWER_WITHER_LEGGINGS", "POWER_WITHER_BOOTS"],
         &["FROZEN_BLAZE_HELMET", "FROZEN_BLAZE_CHESTPLATE", "FROZEN_BLAZE_LEGGINGS", "FROZEN_BLAZE_BOOTS"],
@@ -176,7 +176,7 @@ pub static BERSERKER_SETUP: Setup = Setup {
     pets: &["GOLDEN_DRAGON", "ENDER_DRAGON", "BABY_YETI", "LION", "TIGER", "WITHER_SKELETON"],
 };
 
-pub static MAGE_SETUP: Setup = Setup {
+pub const MAGE_SETUP: Setup = Setup {
     armor: &[
         &["WITHER_GOGGLES"],
         &["WISE_WITHER_HELMET", "WISE_WITHER_CHESTPLATE", "WISE_WITHER_LEGGINGS", "WISE_WITHER_BOOTS"],
@@ -195,7 +195,7 @@ pub static MAGE_SETUP: Setup = Setup {
     pets: &["GOLDEN_DRAGON", "SHEEP", "ENDER_DRAGON"],
 };
 
-pub static TANK_SETUP: Setup = Setup {
+pub const TANK_SETUP: Setup = Setup {
     armor: &[
         &["REAPER_MASK"],
         &["TANK_WITHER_HELMET", "TANK_WITHER_CHESTPLATE", "TANK_WITHER_LEGGINGS", "TANK_WITHER_BOOTS"],
@@ -214,7 +214,7 @@ pub static TANK_SETUP: Setup = Setup {
     pets: &["GOLDEN_DRAGON", "ENDER_DRAGON", "BABY_YETI", "BLUE_WHALE", "TURTLE"],
 };
 
-pub static HEALER_SETUP: Setup = Setup {
+pub const HEALER_SETUP: Setup = Setup {
     armor: &[
         &["REAPER_MASK"],
         &["MENDER_CROWN"],

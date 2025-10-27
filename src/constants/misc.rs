@@ -12,7 +12,7 @@ pub const MAX_MINING_COMMISSION_MILESTONE: i8 = 6;
 
 pub const SKYBLOCK_YEAR_TO_REAL_HOURS: i8 = 124;
 
-pub const MASTER_STARS: &[&'static str; 5] = &[
+pub const MASTER_STARS: &[&str] = &[
     "FIRST_MASTER_STAR",
     "SECOND_MASTER_STAR",
     "THIRD_MASTER_STAR",
@@ -20,8 +20,7 @@ pub const MASTER_STARS: &[&'static str; 5] = &[
     "FIFTH_MASTER_STAR"
 ];
 
-//TODO: can't it be like that [&str; 5] for all vecs
-pub const TROPHY_FISHING_TIERS: [&str; 5] = [
+pub const TROPHY_FISHING_TIERS: &[&str] = &[
     "None",
     "Novice Trophy Fisher (Caught all Bronze Fishes)",
     "Adept Trophy Fisher (Caught all Silver Fishes)",
@@ -29,7 +28,7 @@ pub const TROPHY_FISHING_TIERS: [&str; 5] = [
     "Master Trophy Fisher (Caught all Diamond Fishes)"
 ];
 
-pub const TROPHY_FISHES: &[&'static str; 18] = &["sulphur_skitter", "blobfish", "obfuscated_fish_1", "steaming_hot_flounder",
+pub const TROPHY_FISHES: &[&str] = &["sulphur_skitter", "blobfish", "obfuscated_fish_1", "steaming_hot_flounder",
     "gusher", "obfuscated_fish_2", "slugfish", "flyfish", "obfuscated_fish_3", "vanille", "lava_horse", "mana_ray",
     "volcanic_stonefish", "skeleton_fish", "moldfin", "soul_fish", "karate_fish", "golden_fish"
 ];

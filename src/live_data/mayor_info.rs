@@ -9,14 +9,15 @@ use std::time::Duration;
 use tokio::sync::{Notify, RwLock};
 use tokio::time::{interval_at, Instant};
 
-static DATA_WAITER: Notify = Notify::const_new();
-static MAYOR_INFO: LazyLock<RwLock<MayorInfo>> = LazyLock::new(|| RwLock::new(MayorInfo::default()));
 const MAYOR_ENDPOINT: &str = "https://api.hypixel.net/v2/resources/skyblock/election";
 const THRESHOLD: u64 = 300;
 const REAL_HOURS_PER_SB_YEAR: i64 = 124;
 const ELECTION_OFFSET_HOURS: i64 = 29;
 const ELECTION_OFFSET_MINS: i64 = 20;
 const SB_START_TIMESTAMP: i64 = 1560275700; // Hypixel SkyBlock release timestamp (2019-06-11 11:15 UTC)
+
+static DATA_WAITER: Notify = Notify::const_new();
+static MAYOR_INFO: LazyLock<RwLock<MayorInfo>> = LazyLock::new(|| RwLock::new(MayorInfo::default()));
 
 pub async fn schedule() {
     tokio::spawn(async {
@@ -154,7 +155,7 @@ pub fn get_special_mayors_info() -> String {
             );
             (
                 year,
-                format!(" - Next {name} -> Year {year} in ~{d}d {h}h {m}m {s}s"),
+                format!("- Next {name} -> Year {year} in ~{d}d {h}h {m}m {s}s"),
             )
         })
         .collect();

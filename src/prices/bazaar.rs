@@ -9,11 +9,12 @@ use tokio::io::AsyncWriteExt;
 use tokio::sync::{Notify, RwLock};
 use tokio::time::{interval, interval_at, Instant};
 
-static BAZAAR: LazyLock<RwLock<FxHashMap<String, PriceData>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
-static DATA_WAITER: Notify = Notify::const_new();
 const API_ENDPOINT: &str = "https://api.hypixel.net/v2/skyblock/bazaar";
 const THRESHOLD: u64 = 70;
 const MIN_DELAY_SECS: u64 = 20;
+
+static BAZAAR: LazyLock<RwLock<FxHashMap<String, PriceData>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
+static DATA_WAITER: Notify = Notify::const_new();
 
 pub async fn schedule() {
     tokio::spawn(async {

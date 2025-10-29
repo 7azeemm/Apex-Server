@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::error::Error;
 use std::time::Duration;
 
-const API_KEY: &str = "822c3cce-dfc4-48bf-8653-f82b609e5436";
+const API_KEY: &str = "d1086173-a977-4fc3-993a-5b1781e8e13b";
 
 pub static HTTP_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
     reqwest::Client::builder()

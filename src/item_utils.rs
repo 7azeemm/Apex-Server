@@ -15,7 +15,6 @@ use std::io::Cursor;
 
 pub fn get_pretty_name(text: &str) -> String {
     text.to_lowercase()
-        .replace("enchantment", "") //TODO: not here
         .replace('_', " ")
         .split_whitespace()
         .map(|word| {

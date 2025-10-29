@@ -10,10 +10,11 @@ use std::time::Duration;
 use tokio::sync::{Notify, RwLock};
 use tokio::time::{interval_at, Instant};
 
-static DATA_WAITER: Notify = Notify::const_new();
-static DATA: LazyLock<RwLock<FxHashMap<String, u64>>> = LazyLock::new(|| RwLock::new(HashMap::default()));
 const ENDPOINT: &str = "https://raw.githubusercontent.com/SkyHelperBot/Prices/main/pricesV2.json";
 const THRESHOLD: u64 = 300;
+
+static DATA_WAITER: Notify = Notify::const_new();
+static DATA: LazyLock<RwLock<FxHashMap<String, u64>>> = LazyLock::new(|| RwLock::new(HashMap::default()));
 
 pub async fn schedule() {
     tokio::spawn(async {

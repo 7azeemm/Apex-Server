@@ -8,10 +8,11 @@ use std::time::Duration;
 use tokio::sync::{Notify, RwLock};
 use tokio::time::{interval_at, Instant};
 
-static DATA_WAITER: Notify = Notify::const_new();
-static CONTESTS: LazyLock<RwLock<HashMap<String, Vec<String>>>> = LazyLock::new(|| RwLock::new(HashMap::default()));
 const CONTESTS_ENDPOINT: &str = "https://api.elitebot.dev/contests/at/now";
 const THRESHOLD: u64 = 300;
+
+static DATA_WAITER: Notify = Notify::const_new();
+static CONTESTS: LazyLock<RwLock<HashMap<String, Vec<String>>>> = LazyLock::new(|| RwLock::new(HashMap::default()));
 
 pub async fn schedule() {
     tokio::spawn(async {
@@ -40,13 +41,10 @@ async fn update_contests() -> Result<(), Box<dyn Error>> {
                             arr.iter()
                                 .filter_map(|item| item.as_str().map(|s| s.to_string()))
                                 .collect::<Vec<String>>()
-                        })
-                        .unwrap_or_default();
+                        }).unwrap_or_default();
                     (k.clone(), contests_vec)
-                })
-                .collect::<HashMap<String, Vec<String>>>()
-        })
-        .unwrap_or_default();
+                }).collect::<HashMap<String, Vec<String>>>()
+        }).unwrap_or_default();
 
     let mut data = CONTESTS.write().await;
     data.clear();

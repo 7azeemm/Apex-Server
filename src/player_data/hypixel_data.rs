@@ -5,11 +5,11 @@ use crate::player_data::profile_fetcher::get_profiles_info;
 use crate::structs::player_data_structs::{PlayerDataResponse, StringBuilder};
 use chrono::Utc;
 use serde_json::Value;
+use crate::constants::misc::ISLAND_NAMES;
 
 const PLAYER_ENDPOINT: &str = "https://api.hypixel.net/v2/player";
 const STATUS_ENDPOINT: &str = "https://api.hypixel.net/v2/status";
 
-//TODO: check rank with mvp++ / pig / None
 pub async fn get_player_info(pdr: &mut PlayerDataResponse) {
     let mut sb = StringBuilder::new();
     let player_uuid = pdr.player_uuid();
@@ -19,10 +19,7 @@ pub async fn get_player_info(pdr: &mut PlayerDataResponse) {
         Ok(json) => {
             if let Some(player) = json.get("player") {
                 if let Some(username) = player.get_str("displayname") {
-                    sb.push(match get_hypixel_rank(username, player) {
-                        None => format!("Player: {username}"),
-                        Some(rank) => format!("Player: [{rank}] {username}")
-                    });
+                    sb.push(format!("Player: [{}] {username}", get_hypixel_rank(username, player)));
 
                     let last_logout = player.get_u64("lastLogout").map(|t| format!("Last Active: {}", format_last_active(t)));
                     match get_player_status(player_uuid).await {
@@ -51,22 +48,19 @@ async fn get_player_status(player_uuid: &str) -> Option<String> {
         Ok(json) => {
             if json.get_bool("success").unwrap_or(false) && let Some(session) = json.get("session") {
                 let online = session.get_bool("online").unwrap_or(false);
-                let online_str = match online {
-                    true => "Online",
-                    false => "Offline"
-                };
+                let online_str = if online { "Online" } else { "Offline" };
                 let mut str = format!("Status: {online_str}");
                 if online {
                     if let Some(game_type) = session.get_str("gameType") {
-                        let pretty_game = get_pretty_name(game_type);
-                        str.push_str(&format!(" in {}", pretty_game));
+                        let island_name = ISLAND_NAMES.get(game_type).map(|s| s.to_string()).unwrap_or(get_pretty_name(game_type));
+                        str.push_str(&format!(" in {}", island_name));
+
                         if let Some(mode) = session.get_str("mode") {
                             let pretty_mode = get_pretty_name(mode);
-                            if !pretty_mode.starts_with(&pretty_game) {
+                            if !pretty_mode.starts_with(&island_name) {
                                 str.push_str(&format!(" {}", pretty_mode));
                             } else {
-                                let trimmed_mode = pretty_mode.strip_prefix(&pretty_game).unwrap_or(&pretty_mode);
-                                let trimmed_mode = trimmed_mode.trim_start();
+                                let trimmed_mode = pretty_mode.strip_prefix(&island_name).unwrap_or(&pretty_mode).trim_start();
                                 if !trimmed_mode.is_empty() {
                                     str.push_str(&format!(" {}", trimmed_mode));
                                 }
@@ -83,19 +77,23 @@ async fn get_player_status(player_uuid: &str) -> Option<String> {
     None
 }
 
-fn get_hypixel_rank(username: &str, value: &Value) -> Option<String> {
-    // Rest In Peace Techno :'(
-    if username.to_lowercase() == "technoblade" { return Some("PIG+++".to_owned()); }
+fn get_hypixel_rank(username: &str, value: &Value) -> String {
+    // RIP Technoblade :'(
+    if username.to_lowercase() == "technoblade" { return "PIG+++".to_owned() }
 
-    let candidates = [
-        value.get_str("rank"),
-        value.get_str("monthlyPackageRank").filter(|s| *s != "NONE"),
-        value.get_str("newPackageRank"),
-    ];
+    if let Some(rank) = value.get_str("rank") {
+        if rank == "YOUTUBER" || rank == "STAFF" { return rank.to_owned() }
+    }
 
-    candidates.into_iter().flatten().next().map(|s| {
-        s.replace("SUPERSTAR", "MVP++").replace("_PLUS", "+")
-    })
+    if let Some(rank) = value.get_str("monthlyPackageRank") {
+        if rank == "SUPERSTAR" { return "MVP++".to_owned() }
+    }
+
+    if let Some(rank) = value.get_str("newPackageRank") {
+        return rank.replace("_PLUS", "+")
+    }
+
+    "Default".to_owned()
 }
 
 fn format_last_active(ms: u64) -> String {
@@ -103,7 +101,7 @@ fn format_last_active(ms: u64) -> String {
     let now = Utc::now().timestamp();
     let diff = now - secs;
 
-    match diff {
+    let str = match diff {
         d if d < 60 => format!("{d} seconds ago"),
         d if d < 3600 => format!("{} minutes ago", d / 60),
         d if d < 86400 => format!("{} hours ago", d / 3600),
@@ -111,5 +109,10 @@ fn format_last_active(ms: u64) -> String {
         d if d < 2592000 => format!("{} weeks ago", d / 604800),
         d if d < 31536000 => format!("{} months ago", d / 2592000),
         _ => format!("{} years ago", diff / 31536000),
+    };
+
+    match str.starts_with("1") {
+        true => str.replace("s ", " "),
+        false => str
     }
 }

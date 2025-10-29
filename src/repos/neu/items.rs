@@ -8,44 +8,50 @@ use std::sync::LazyLock;
 use tokio::sync::RwLock;
 use tokio::time::Instant;
 
+const ACCESSORY_RARITIES: [&str; 3] = ["ACCESSORY", "HATCESSORY", "DUNGEON ACCESSORY"];
 static ITEMS: LazyLock<RwLock<FxHashMap<String, Value>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
 pub static ACCESSORIES: LazyLock<RwLock<FxHashMap<String, String>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
-static ACCESSORY_RARITIES: [&str; 3] = ["ACCESSORY", "HATCESSORY", "DUNGEON ACCESSORY"];
 
 pub async fn load_items(dir: &str) {
     let start_time = Instant::now();
     let mut map = FxHashMap::default();
 
-    match fs::read_dir(dir) {
-        Ok(entries) => {
-            for entry in entries {
-                match entry {
-                    Ok(entry) => {
-                        let path = entry.path();
-
-                        if path.extension().and_then(|e| e.to_str()) != Some("json") {
-                            continue;
-                        }
-
-                        match fs::read_to_string(&path) {
-                            Ok(buf) => match serde_json::from_str::<Value>(&buf) {
-                                Ok(value) => {
-                                    if let Some(item_id) = value.get_str("internalname") {
-                                        map.insert(item_id.to_owned(), value);
-                                    }
-                                }
-                                Err(err) => eprintln!("[NEU-Repo] Failed to parse JSON in {}: {err}", path.display()),
-                            },
-                            Err(err) => eprintln!("[NEU-Repo] Failed to read {}: {err}", path.display()),
-                        }
-                    }
-                    Err(err) => eprintln!("[NEU-Repo] Failed to read entry in dir {dir}: {err}"),
-                }
-            }
-        }
+    let entries = match fs::read_dir(dir) {
+        Ok(entries) => entries,
         Err(err) => {
             eprintln!("[NEU-Repo] Failed to read dir {dir}: {err}");
             return;
+        }
+    };
+
+    for entry in entries {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(err) => {
+                eprintln!("[NEU-Repo] Failed to read entry in dir {dir}: {err}");
+                continue;
+            }
+        };
+
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json") { continue }
+
+        let value = match fs::read_to_string(&path) {
+            Ok(buffer) => match serde_json::from_str::<Value>(&buffer) {
+                Ok(v) => v,
+                Err(err) => {
+                    eprintln!("[NEU-Repo] Failed to parse JSON in {}: {err}", path.display());
+                    continue;
+                }
+            },
+            Err(err) => {
+                eprintln!("[NEU-Repo] Failed to read {}: {err}", path.display());
+                continue;
+            }
+        };
+
+        if let Some(item_id) = value.get_str("internalname") {
+            map.insert(item_id.to_owned(), value);
         }
     }
 

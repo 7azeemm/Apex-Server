@@ -6,6 +6,7 @@ use derive_new::new;
 use getset::Getters;
 use serde_json::Value;
 use std::collections::HashMap;
+use std::error::Error;
 use std::time::Duration;
 use tokio::time::Instant;
 
@@ -18,10 +19,10 @@ pub struct PlayerDataResponse {
 }
 
 impl PlayerDataResponse {
-    pub async fn new(username: String, profile_name: Option<String>) -> Option<Self> {
-        let player_uuid = get_player_uuid(&username).await.ok()?;
-        let profile = get_player_profile(&username, &player_uuid, profile_name.clone()).await.ok()?;
-        Some(Self { username, profile_name, player_uuid, profile, resp: None })
+    pub async fn new(username: String, profile_name: Option<String>) -> Result<Self, Box<dyn Error>> {
+        let player_uuid = get_player_uuid(&username).await?;
+        let profile = get_player_profile(&username, &player_uuid, profile_name.clone()).await?;
+        Ok(Self { username, profile_name, player_uuid, profile, resp: None })
     }
     pub fn username(&self) -> &str { &self.username }
     pub fn profile_name(&self) -> &Option<String> { &self.profile_name }
@@ -90,7 +91,7 @@ pub struct PlayerProfile {
     setups: HashMap<SetupType, PlayerSetup>,
     museum: Option<Vec<Donation>>,
     purse: u64,
-    bank: u64,
+    bank: Option<u64>,
     first_join: Option<u64>,
     cookie_buff_active: bool,
     members: Vec<String>,
@@ -99,7 +100,7 @@ pub struct PlayerProfile {
 
 impl PlayerProfile {
     pub fn new(id: String, name: String, game_mode: String, selected: bool, data: Value, storage: Storage,
-               setups: HashMap<SetupType, PlayerSetup>, bank: u64, purse: u64, first_join: Option<u64>,
+               setups: HashMap<SetupType, PlayerSetup>, bank: Option<u64>, purse: u64, first_join: Option<u64>,
                cookie_buff_active: bool, members: Vec<String>) -> Self {
         Self {
             id,
@@ -127,15 +128,21 @@ impl PlayerProfile {
     pub fn data(&self) -> &Value { &self.data }
     pub fn garden(&self) -> &Option<Value> { &self.garden }
     pub fn storage(&self) -> &Storage { &self.storage }
-    pub fn setups(&self) -> &HashMap<SetupType, PlayerSetup> { &self.setups }
     pub fn museum(&self) -> &Option<Vec<Donation>> { &self.museum }
-    pub fn bank(&self) -> u64 { self.bank }
+    pub fn bank(&self) -> Option<u64> { self.bank }
     pub fn purse(&self) -> u64 { self.purse }
     pub fn first_join(&self) -> &Option<u64> { &self.first_join }
     pub fn cookie_buff_active(&self) -> bool { self.cookie_buff_active }
     pub fn members(&self) -> &Vec<String> { &self.members }
     pub fn is_expired(&self, threshold: Duration) -> bool {
         Instant::now().duration_since(self.fetch_time) > threshold
+    }
+
+    pub fn add_setup_info(&self, setup_type: SetupType, sb: &mut StringBuilder) {
+        match self.setups.get(&setup_type) {
+            None => sb.push("Gear: unavailable".to_owned()),
+            Some(setup) => setup.add_info(setup_type, sb)
+        }
     }
 
     pub fn set_garden_data(&mut self, data: Value) { self.garden = Some(data); }
@@ -237,4 +244,51 @@ impl PlayerSetup {
     pub fn add_equipment(&mut self, equipment: Vec<String>) { &self.equipment.extend(equipment); }
     pub fn add_tool(&mut self, tool: String) { &self.tools.push(tool); }
     pub fn add_pet(&mut self, pet: String) { &self.pet.push_str(&pet); }
+
+    pub fn add_info(&self, setup_type: SetupType, sb: &mut StringBuilder) {
+        let armor = &self.armor;
+        match armor.iter().any(|p| p != "N/A") {
+            false => sb.push("Armor: N/A".to_owned()),
+            true => {
+                sb.push("Armor:".to_owned());
+                for piece in armor {
+                    sb.push(format!(" - {piece}"));
+                }
+            }
+        }
+
+        let equipment = &self.equipment;
+        match equipment.iter().any(|p| p != "N/A") {
+            false => sb.push("Equipment: N/A".to_owned()),
+            true => {
+                sb.push("Equipment:".to_owned());
+                for piece in equipment {
+                    sb.push(format!(" - {piece}"));
+                }
+            }
+        }
+
+        let tools = &self.tools;
+        if setup_type != SetupType::Fishing {
+            if setup_type != SetupType::Farming {
+                let tool_name = match setup_type {
+                    SetupType::Mining => "Mining Tool",
+                    SetupType::Foraging => "Axe",
+                    _ => "Weapon" // Dungeon classes
+                };
+                let tool = tools.first().map(|s| s.as_str()).unwrap_or("N/A");
+                sb.push(format!("{tool_name}: {tool}"))
+            }
+        } else {
+            match tools.len() == 1 {
+                true => sb.push(format!("Rod: {}", tools.first().unwrap())),
+                false => {
+                    sb.push(format!("Water Rod: {}", tools.first().unwrap()));
+                    sb.push(format!("Lava Rod: {}", tools.get(1).unwrap()));
+                }
+            }
+        }
+
+        sb.push(format!("Pet: {}", &self.pet))
+    }
 }

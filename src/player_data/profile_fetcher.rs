@@ -15,12 +15,12 @@ use std::time::Duration;
 use tokio::sync::RwLock;
 use tokio::time::{interval_at, Instant};
 
-static PLAYER_PROFILES: LazyLock<RwLock<FxHashMap<String, PlayerData>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
-
 const PROFILES_API_ENDPOINT: &str = "https://api.hypixel.net/v2/skyblock/profiles";
 const GARDEN_API_ENDPOINT: &str = "https://api.hypixel.net/v2/skyblock/garden";
 const MUSEUM_API_ENDPOINT: &str = "https://api.hypixel.net/v2/skyblock/museum";
 const PROFILE_CLEAN_THRESHOLD: u64 = 180;
+
+static PLAYER_PROFILES: LazyLock<RwLock<FxHashMap<String, PlayerData>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
 
 pub fn profile_cleaner() {
     tokio::spawn(async {
@@ -68,7 +68,8 @@ pub async fn get_player_profile(username: &str, player_uuid: &str, profile_name:
         }
     }
 
-    let json = send_http_request(&format!("{PROFILES_API_ENDPOINT}?key={}&uuid={player_uuid}", get_api_key())).await?;
+    let url = format!("{PROFILES_API_ENDPOINT}?key={}&uuid={player_uuid}", get_api_key());
+    let json = send_http_request(&url).await?;
     if !json.get_bool("success").unwrap_or(false) {
         return Err(format!("Couldn't fetch profiles of player {username}, uuid: {player_uuid}").into());
     }
@@ -120,7 +121,7 @@ pub async fn get_garden_data(profile: &mut PlayerProfile) -> &Option<Value> {
     let url = &format!("{GARDEN_API_ENDPOINT}?key={}&profile={}", get_api_key(), profile.id());
     match send_http_request(url).await {
         Ok(value) => match value.get_bool("success").unwrap_or(false) {
-            true => profile.set_garden_data(value),
+            true => profile.set_garden_data(value.get("garden").unwrap_or(&Value::default()).clone()),
             false => eprintln!("Couldn't fetch garden data of profile {}", profile.id())
         }
         Err(err) => eprintln!("Err: {:?}", err)
@@ -182,13 +183,17 @@ async fn parse_profile(profile: &Value, player_uuid: &str) -> Option<PlayerProfi
     let setups = scan_setups(&storage);
     let first_join = player_data.get_u64("profile/first_join");
     let cookie_buff_active = player_data.get_bool("profile/cookie_buff_active").unwrap_or(false);
-    let bank = profile.get_f64("banking/balance").unwrap_or(0.0) as u64;
-    let personal_bank = player_data.get_f64("profile/bank_account").unwrap_or(0.0) as u64;
     let purse = player_data.get_f64("currencies/coin_purse").unwrap_or(0.0) as u64;
+    let bank_balance = profile.get_f64("banking/balance");
+    let personal_bank = player_data.get_f64("profile/bank_account");
+    let bank = match bank_balance.is_none() && personal_bank.is_none() {
+        false => Some((bank_balance.unwrap_or_default() + personal_bank.unwrap_or_default()) as u64),
+        true => None
+    };
 
     let player_profile = PlayerProfile::new(
         profile_id.to_owned(), profile_name.to_owned(), game_mode.to_owned(), selected,
-        player_data.clone(), storage, setups, bank + personal_bank, purse, first_join, cookie_buff_active, member_usernames,
+        player_data.clone(), storage, setups, bank, purse, first_join, cookie_buff_active, member_usernames,
     );
 
     Some(player_profile)
@@ -200,7 +205,7 @@ pub async fn get_profiles_info(player_uuid: &str, sb: &mut StringBuilder) {
         let selected_profile = player.selected_profile();
         sb.push("Profiles:".to_owned());
         for (name, (_, game_mode)) in player.profiles_info() {
-            let mut line = format!(" - {} ({})", name, get_pretty_name(game_mode));
+            let mut line = format!("- {} ({})", name, get_pretty_name(game_mode));
             if let Some(selected) = selected_profile && selected == name {
                 line.push_str(" [Selected]");
             }
@@ -341,14 +346,14 @@ fn scan_setups(storage: &Storage) -> HashMap<SetupType, PlayerSetup> {
                     }
                 }
             }
-
-            let mut armor_set = Vec::new();
-            for piece in armor {
-                let piece_name = piece.map(|(_, name)| name).unwrap_or("N/A".to_owned());
-                armor_set.push(piece_name);
-            }
-            player_setup.add_armor(armor_set);
         }
+
+        let mut armor_set = Vec::new();
+        for piece in armor {
+            let piece_name = piece.map(|(_, name)| name).unwrap_or("N/A".to_owned());
+            armor_set.push(piece_name);
+        }
+        player_setup.add_armor(armor_set);
 
         let equipment = scan_gear(setup.equipment, &player_items);
         let mut equipment_set = Vec::new();
@@ -365,7 +370,7 @@ fn scan_setups(storage: &Storage) -> HashMap<SetupType, PlayerSetup> {
 
         let mut pet = None;
         if frozen_blaze_pieces >= 2 {
-            static BLAZE_PET_ID: &str = "BLAZE";
+            const BLAZE_PET_ID: &str = "BLAZE";
             if setup.pets.iter().any(|id| *id == BLAZE_PET_ID) {
                 if pet_ids.contains(&BLAZE_PET_ID.to_owned()) {
                     pet = Some(BLAZE_PET_ID)
@@ -422,6 +427,39 @@ fn scan_gear(sets: &[&[&str]], player_items: &HashMap<String, String>) -> [Optio
     found
 }
 
+fn organize_wardrobe_sets(wardrobe_items: Vec<Option<Item>>) -> Vec<[Option<Item>; 4]> {
+    let mut pages = Vec::new();
+    let len = wardrobe_items.len();
+    let page_len = 36;
+
+    // Split into two pages of 36 items each
+    for page_start in (0..len).step_by(page_len) {
+        // Each page has 9 sets
+        for set_index in 0..9 {
+            let mut armor_set: [Option<Item>; 4] = [None, None, None, None];
+            let mut is_empty = true;
+
+            // Fill slots
+            for slot in 0..4 {
+                let item_index = page_start + (slot * 9) + set_index;
+                if item_index < wardrobe_items.len() {
+                    let item = wardrobe_items[item_index].clone();
+                    if item.is_some() {
+                        is_empty = false;
+                    }
+                    armor_set[slot] = item;
+                }
+            }
+
+            if !is_empty {
+                pages.push(armor_set);
+            }
+        }
+    }
+
+    pages
+}
+
 fn get_container_items(container: &Value, path: &str) -> Vec<Item> {
     let mut items = Vec::new();
     if let Some(contents) = container.get_str("data") {
@@ -464,37 +502,4 @@ fn get_item_obj(item: ItemNbt, path: &str, slot: usize) -> Option<Item> {
     let custom_id = format!("{item_id}-{path}_{slot}");
 
     Some(Item::new(custom_id, item_id, item_name, item.count(), item))
-}
-
-fn organize_wardrobe_sets(wardrobe_items: Vec<Option<Item>>) -> Vec<[Option<Item>; 4]> {
-    let mut pages = Vec::new();
-    let len = wardrobe_items.len();
-    let page_len = 36;
-
-    // Split into two pages of 36 items each
-    for page_start in (0..len).step_by(page_len) {
-        // Each page has 9 sets
-        for set_index in 0..9 {
-            let mut armor_set: [Option<Item>; 4] = [None, None, None, None];
-            let mut is_empty = true;
-
-            // Fill slots
-            for slot in 0..4 {
-                let item_index = page_start + (slot * 9) + set_index;
-                if item_index < wardrobe_items.len() {
-                    let item = wardrobe_items[item_index].clone();
-                    if item.is_some() {
-                        is_empty = false;
-                    }
-                    armor_set[slot] = item;
-                }
-            }
-
-            if !is_empty {
-                pages.push(armor_set);
-            }
-        }
-    }
-
-    pages
 }

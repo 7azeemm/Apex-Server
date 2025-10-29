@@ -15,13 +15,14 @@ use std::time::{Duration, Instant};
 use tokio::sync::Notify;
 use tokio::time::{interval, interval_at, sleep};
 
-static DATA_WAITER: Notify = Notify::const_new();
-static AUCTION_MANAGER: LazyLock<AuctionManager> = LazyLock::new(|| AuctionManager::new());
 const API_ENDPOINT: &str = "https://api.hypixel.net/v2/skyblock/auctions";
 const THRESHOLD: u64 = 70;
 const MIN_DELAY_SECS: u64 = 20;
 const MAX_RETRIES: u64 = 3;
 const MAX_CONCURRENT_REQUESTS: usize = 10;
+
+static DATA_WAITER: Notify = Notify::const_new();
+static AUCTION_MANAGER: LazyLock<AuctionManager> = LazyLock::new(|| AuctionManager::new());
 
 pub async fn schedule() {
     tokio::spawn(async {

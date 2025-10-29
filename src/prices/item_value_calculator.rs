@@ -119,7 +119,7 @@ impl ModifierHandler for AbilityScrollModifier {
             for scroll in scrolls {
                 if let Some(id) = scroll.as_str() {
                     let price = get_buy_price(&id).await;
-                    value.add_v(&format!(" - {}", get_pretty_name(id)), price, 1);
+                    value.add_v(&format!("- {}", get_pretty_name(id)), price, 1);
                 }
             }
         }
@@ -189,7 +189,7 @@ impl ModifierHandler for EnchantmentsModifier {
 
         for (name, level) in enchantments {
             let Some(level) = level.as_u64() else { continue };
-            let cool_name = &format!("{} {level}", get_pretty_name(name));
+            let cool_name = &format!("{} {level}", get_pretty_name(&name.to_lowercase().replace("enchantment", "")));
             enchants_list.push(cool_name.to_string());
 
             if STACKING_ENCHANTS.contains(&name.as_str()) {
@@ -456,7 +456,7 @@ impl ModifierHandler for BoostersModifier {
                 if let Some(booster) = booster.as_str() {
                     let id = format!("{}_BOOSTER", booster.to_uppercase());
                     let price = get_buy_price(&id).await;
-                    value.add_v(&format!(" - {}", get_pretty_name(&id)), price, 1);
+                    value.add_v(&format!("- {}", get_pretty_name(&id)), price, 1);
                 }
             }
         }

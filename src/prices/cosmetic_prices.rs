@@ -1,7 +1,4 @@
 use crate::http::send_http_request;
-use crate::item_utils::get_pet_level;
-use crate::prices::auctions::get_lowest_bin;
-use crate::structs::player_data_structs::Pet;
 use rustc_hash::FxHashMap;
 use std::collections::HashMap;
 use std::error::Error;
@@ -45,41 +42,4 @@ async fn update() -> Result<(), Box<dyn Error>> {
 
 pub async fn get_cosmetic_price(id: &str) -> Option<u64> {
     DATA.read().await.get(id).map(|p| *p)
-}
-
-pub async fn get_pet_networth(pet: &Pet) -> u64 {
-    let (level, _) = get_pet_level(pet.name(), pet.tier(), *pet.xp() as u64);
-    let level = match level {
-        0..100 => 1,
-        100..200 => 100,
-        _ => level
-    };
-    let id = format!("LVL_{level}_{}_{}", pet.tier(), pet.name());
-    let base_id = format!("{}_{}", pet.tier(), pet.name());
-
-    if let Some(skin) = pet.skin() {
-        let id_with_skin = format!("{id}_SKINNED_{skin}");
-        if let Some(price) = get_cosmetic_price(&id_with_skin).await {
-            return price;
-        }
-
-        let mut pet_value = 0;
-        pet_value += match get_cosmetic_price(&id).await {
-            None => get_lowest_bin(&base_id).await.unwrap_or(0),
-            Some(price) => price
-        };
-
-        let skin_id = format!("PET_SKIN_{skin}");
-        pet_value += match get_cosmetic_price(&skin_id).await {
-            None => get_lowest_bin(&skin_id).await.unwrap_or(0),
-            Some(price) => price
-        };
-        return pet_value;
-    }
-
-    if let Some(price) = get_cosmetic_price(&id).await {
-        return price;
-    }
-
-    get_lowest_bin(&base_id).await.unwrap_or(0)
 }

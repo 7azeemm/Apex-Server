@@ -57,7 +57,6 @@ pub struct Auction {
 #[getset(get = "pub")]
 pub struct AuctionItem {
     auctioneer: String,
-    item_uuid: String,
     item_name: String,
     item_id: String,
     item_nbt: ItemNbt,
@@ -66,13 +65,12 @@ pub struct AuctionItem {
 }
 
 impl AuctionItem {
-    pub fn new(auction: &Auction, item_uuid: String, item_id: String, item_nbt: ItemNbt) -> Self {
+    pub fn new(auction: &Auction, item_id: String, item_nbt: ItemNbt) -> Self {
         Self {
             auctioneer: auction.auctioneer.clone(),
             item_name: auction.item_name.clone(),
             value: ItemValue::default(),
             price: auction.starting_bid,
-            item_uuid,
             item_id,
             item_nbt
         }
@@ -99,7 +97,6 @@ impl LowestBinItem {
 #[derive(Serialize)]
 pub struct AuctionItemResponse {
     pub auctioneer: String,
-    pub item_uuid: String,
     pub item_name: String,
     pub item_id: String,
     pub price: u64,
@@ -111,7 +108,6 @@ impl AuctionItemResponse {
     pub async fn from_auction_item(item: &AuctionItem) -> Self {
         Self {
             auctioneer: item.auctioneer.clone(),
-            item_uuid: item.item_uuid.clone(),
             item_name: item.item_name.clone(),
             item_id: item.item_id.clone(),
             price: item.price,

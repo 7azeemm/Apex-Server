@@ -23,18 +23,18 @@ impl SingleItemModifier {
 impl ModifierHandler for SingleItemModifier {
     async fn calculate_value(&self, _ctx: &ModifierContext<'_>, _attr: &Value, value: &mut ItemValue) {
         let price = get_buy_price(self.item_id).await;
-        value.add_v(&format!("{}: Applied", self.label), price, 1);
+        value.add(&format!("{}: Applied", self.label), price, 1);
     }
 }
 
 pub struct CountedItemModifier {
     label: &'static str,
     item_id: &'static str,
-    max_count: Option<u64>,
+    max_count: u64,
 }
 
 impl CountedItemModifier {
-    pub const fn new(label: &'static str, item_id: &'static str, max_count: Option<u64>) -> Self {
+    pub const fn new(label: &'static str, item_id: &'static str, max_count: u64) -> Self {
         Self { label, item_id, max_count }
     }
 }
@@ -43,16 +43,10 @@ impl CountedItemModifier {
 impl ModifierHandler for CountedItemModifier {
     async fn calculate_value(&self, _ctx: &ModifierContext<'_>, attr: &Value, value: &mut ItemValue) {
         let Some(mut count) = attr.as_u64() else { return };
-        if let Some(max) = self.max_count {
-            count = count.min(max);
-        }
 
-        let label = match self.max_count {
-            Some(max) => format!("{}: {}/{}", self.label, count, max),
-            None => format!("{}: {}", self.label, count),
-        };
-
+        count = count.min(self.max_count);
+        let label = format!("{}: {}/{}", self.label, count, self.max_count);
         let price = get_buy_price(self.item_id).await;
-        value.add_v(&label, price, count);
+        value.add(&label, price, count);
     }
 }

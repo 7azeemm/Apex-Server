@@ -9,12 +9,12 @@ use crate::live_data::jacob_contests::get_upcoming_contests;
 use crate::live_data::mayor_info::{get_election_over_time_left, get_mayor_info, get_skyblock_date, get_special_mayors_info};
 use crate::player_data::profile_fetcher::{get_garden_data, get_museum_items};
 use crate::prices::bazaar::get_buy_price;
-use crate::prices::cosmetic_prices::get_pet_networth;
-use crate::prices::item_value_calculator::{calculate_item_value, get_pet_full_info};
+use crate::prices::item_value_calculator::{calculate_item_value, get_pet_value};
 use crate::structs::player_data_structs::{PlayerDataResponse, StringBuilder};
 use crate::utils::{format_number, format_number_with_commas, get_time_as_secs};
 use serde_json::Value;
 use std::collections::HashMap;
+use crate::structs::item_structs::ItemValue;
 
 pub async fn get_player_overview(pdr: &mut PlayerDataResponse) {
     let mut sb = StringBuilder::new();
@@ -578,7 +578,7 @@ pub async fn get_inventory(pdr: &mut PlayerDataResponse) {
     pdr.set_resp(sb);
 }
 
-pub async fn get_profile_networth(pdr: &mut PlayerDataResponse) {
+pub async fn get_profile_networth(pdr: &mut PlayerDataResponse, detailed: bool) {
     let mut sb = StringBuilder::new();
     let mut total_value = 0;
     let mut api_disabled = false;
@@ -599,10 +599,19 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse) {
 
         for (name, items) in containers {
             let mut value = 0;
+            let mut item_values = Vec::new();
             for item in items {
-                value += calculate_item_value(item.item_id(), item.nbt()).await.value();
+                let item_value = calculate_item_value(item.item_id(), item.nbt(), false).await;
+                item_values.push((item.name().to_owned(), item_value.value()));
+                value += item_value.value();
             }
-            sb.push(format!("{}: {} coins", name, format_number(value)));
+            sb.push(format!("{name}: {} coins", format_number(value)));
+            if detailed {
+                for (name, value) in item_values {
+                    sb.push(format!("- {name}: {} coins", format_number(value)));
+                }
+                sb.pushln();
+            }
             total_value += value;
         }
 
@@ -615,7 +624,9 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse) {
 
         let mut pets_value = 0;
         for pet in storage.pets() {
-            pets_value += get_pet_networth(pet).await;
+            let mut value = ItemValue::new(detailed);
+            get_pet_value(pet, &mut value).await;
+            pets_value += value.value();
         }
         sb.push(format!("Pets: {} coins", format_number(pets_value)));
         total_value += pets_value;
@@ -629,7 +640,7 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse) {
         for donation in museum_donations.iter() {
             if *donation.borrowing() { continue; };
             for item in donation.items() {
-                museum_value += calculate_item_value(item.item_id(), item.nbt()).await.value();
+                museum_value += calculate_item_value(item.item_id(), item.nbt(), false).await.value();
             }
         }
     }
@@ -742,8 +753,8 @@ fn get_level_and_progress(xp_table: &[u64], xp: u64, default: u64, max: u64, cap
     (level, str)
 }
 
-
-pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, is_pet: bool) {
+//todo: separate pet and item
+pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, is_pet: bool, include_prices: bool) {
     let mut sb = StringBuilder::new();
     let storage = pdr.profile().storage();
 
@@ -760,11 +771,12 @@ pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, is_pet: boo
                 .map(|pet| (*pet).clone());
 
             if let Some(pet) = pet {
-                let (lines, pet_value) = get_pet_full_info(&pet).await;
-                for line in lines {
-                    sb.push(line);
+                let mut value = ItemValue::new(include_prices);
+                get_pet_value(&pet, &mut value).await;
+                for line in value.info() {
+                    sb.push(line.to_owned());
                 }
-                sb.push(format!("Pet Value: {} coins", format_number_with_commas(pet_value)));
+                sb.push(format!("Estimated Pet Value: {} coins", format_number_with_commas(value.value())));
                 if *pet.active() {
                     sb.push("The Pet is Active".to_owned());
                 }
@@ -773,6 +785,7 @@ pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, is_pet: boo
             }
 
             if matches.len() > 1 {
+                sb.pushln();
                 sb.push("Other Similar Pets:".to_owned());
                 for pet in matches.iter().skip(1) {
                     sb.push(format!("- {pet}"));
@@ -802,7 +815,7 @@ pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, is_pet: boo
                     true => format!("Item: {count}x {item_name}"),
                     false => format!("Item: {item_name}")
                 });
-                let value = calculate_item_value(item.item_id(), item.nbt()).await;
+                let value = calculate_item_value(item.item_id(), item.nbt(), include_prices).await;
                 for line in value.info().iter().skip(1) {
                     sb.push(line.to_owned());
                 }
@@ -828,6 +841,14 @@ pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, is_pet: boo
 }
 
 fn find_best_match<'a>(query: &'a str, list: &'a [String]) -> Vec<&'a str> {
+    fn word_overlap_score(candidate: &str, query: &str) -> usize {
+        let lowercase = query.to_lowercase();
+        let query_words: Vec<_> = lowercase.split_whitespace().collect();
+        let candidate = candidate.to_lowercase();
+
+        query_words.iter().filter(|w| candidate.contains(*w)).count()
+    }
+
     // 1. Collect scores
     let mut scored: Vec<(&str, usize)> = list
         .iter()
@@ -853,12 +874,4 @@ fn find_best_match<'a>(query: &'a str, list: &'a [String]) -> Vec<&'a str> {
     }
 
     best_matches
-}
-
-fn word_overlap_score(candidate: &str, query: &str) -> usize {
-    let lowercase = query.to_lowercase();
-    let query_words: Vec<_> = lowercase.split_whitespace().collect();
-    let candidate = candidate.to_lowercase();
-
-    query_words.iter().filter(|w| candidate.contains(*w)).count()
 }

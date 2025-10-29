@@ -28,10 +28,6 @@ pub fn get_pretty_name(text: &str) -> String {
         .join(" ")
 }
 
-pub fn get_item_uuid(item_nbt: &ItemNbt) -> Option<String> {
-    item_nbt.get_extra_map()?.get("uuid")?.as_str().map(|s| s.to_string())
-}
-
 pub fn get_item_id(item_nbt: &ItemNbt) -> Option<String> {
     let extra_map = item_nbt.get_extra_map()?;
 
@@ -121,8 +117,7 @@ pub fn decode_item(encoded_str: &str) -> Result<ItemNbt, Box<dyn Error>> {
         _ => return Err("[Decoder] Root is not a compound".into()),
     };
 
-    let item_nbt: ItemNbt = from_value(&i0)?;
-    Ok(item_nbt)
+    Ok(from_value::<ItemNbt>(&i0)?)
 }
 
 pub fn decode_items(encoded: &str, keep_empty_slots: bool) -> Result<Vec<Option<ItemNbt>>, Box<dyn Error>> {

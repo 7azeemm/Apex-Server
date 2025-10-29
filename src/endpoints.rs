@@ -70,19 +70,6 @@ pub async fn get_price(axum::extract::Query(q): axum::extract::Query<PriceQuery>
     }))
 }
 
-pub async fn get_auction_by_item_uuid(Path(item_uuid): Path<String>) -> Result<Json<AuctionItemResponse>, StatusCode> {
-    match auctions::get_auction_by_item_uuid(&item_uuid).await {
-        Some(auction_item) => {
-            let response = AuctionItemResponse::from_auction_item(&auction_item).await;
-            Ok(Json(response))
-        }
-        None => {
-            println!("couldn't find auction by item uuid {item_uuid}");
-            Err(StatusCode::NOT_FOUND)
-        }
-    }
-}
-
 pub async fn get_auction_by_auction_id(Path(auction_id): Path<String>) -> Result<Json<AuctionItemResponse>, StatusCode> {
     match auctions::get_auction_by_id(&auction_id).await {
         Some(auction_item) => {

@@ -4,6 +4,7 @@ use fastnbt::Value;
 use getset::Getters;
 use serde::Deserialize;
 use std::collections::HashMap;
+use crate::utils::format_number;
 
 #[derive(Default, Debug, Deserialize, Clone)]
 pub struct ItemNbt {
@@ -35,17 +36,26 @@ pub struct ItemValue {
     modifiers_value: u64,
     base_value: u64,
     value: u64,
+    include_prices: bool
 }
 
 impl ItemValue {
-    pub fn add(&mut self, line: &str) {
-        self.info.push(line.to_owned());
+    pub fn new(include_prices: bool) -> Self {
+        Self { info: Vec::default(), modifiers_value: 0, base_value: 0, value: 0, include_prices }
     }
 
-    pub fn add_v(&mut self, line: &str, price: Option<u64>, count: u64) {
-        self.info.push(line.to_owned());
-        self.modifiers_value += price.unwrap_or(0) * count;
+    pub fn add(&mut self, line: &str, price: Option<u64>, count: u64) {
+        let value = price.unwrap_or(0) * count;
+        self.modifiers_value += value;
         self.value = self.modifiers_value + self.base_value;
+        self.info.push(match self.include_prices && price.is_some() {
+            true => format!("{line} ({} coins)", format_number(value)),
+            false => line.to_owned()
+        });
+    }
+
+    pub fn add_line(&mut self, line: &str) {
+        self.info.push(line.to_owned());
     }
 
     pub fn add_value(&mut self, price: u64) {
@@ -54,14 +64,9 @@ impl ItemValue {
     }
 
     pub fn modifiers_value(&self) -> u64 { self.modifiers_value }
-    pub fn base_value(&self) -> u64 { self.base_value }
     pub fn value(&self) -> u64 { self.value }
     pub fn info(&self) -> Vec<String> { self.info.clone() }
 
-    pub fn set_modifiers_value(&mut self, value: u64) {
-        self.modifiers_value = value;
-        self.value = self.modifiers_value + self.base_value;
-    }
     pub fn set_base_value(&mut self, value: u64) {
         self.base_value = value;
         self.value = self.modifiers_value + self.base_value;

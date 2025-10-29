@@ -1,6 +1,5 @@
 use crate::endpoints::AuctioneerAuctionItem;
 use crate::http::send_raw_http_request;
-use crate::item_utils::get_item_uuid;
 use crate::item_utils::{decode_item, get_item_id};
 use crate::prices::item_value_calculator;
 use crate::structs::auctions_structs::{Auction, AuctionItem, AuctionManager, AuctionsResponse, LowestBinItem};
@@ -126,10 +125,16 @@ async fn process_auction(auction: &Auction) {
     AUCTION_MANAGER.to_keep.write().await.insert(auction_id.to_owned());
     if AUCTION_MANAGER.auctions.read().await.contains_key(auction_id) { return; };
 
-    let Ok(item_nbt) = decode_item(auction.item_bytes()) else { return };
+    let item_nbt = match decode_item(auction.item_bytes()) {
+        Ok(nbt) => nbt,
+        Err(err) => {
+            eprintln!("Failed to decode {}, err: {err}", auction.item_name());
+            return
+        }
+    };
 
-    if let (Some(id), Some(uuid)) = (get_item_id(&item_nbt), get_item_uuid(&item_nbt)) {
-        let auction_item = AuctionItem::new(auction, uuid, id, item_nbt);
+    if let Some(id) = get_item_id(&item_nbt) {
+        let auction_item = AuctionItem::new(auction, id, item_nbt);
         let mut to_add = AUCTION_MANAGER.to_add.write().await;
         to_add.insert(auction_id.to_owned(), auction_item);
     }
@@ -210,7 +215,7 @@ async fn update_auctions_values() {
 async fn calc_auction_value(auction: &mut AuctionItem) {
     let item_id = auction.item_id();
     let item_nbt = auction.item_nbt();
-    let item_value = item_value_calculator::calculate_item_value(item_id, item_nbt).await;
+    let item_value = item_value_calculator::calculate_item_value(item_id, item_nbt, false).await;
     auction.set_value(item_value);
 }
 
@@ -228,11 +233,6 @@ pub async fn get_lowest_bin_and_id(item_id: &str) -> Option<(u64, String)> {
 
 pub async fn get_auction_by_id(auction_id: &str) -> Option<AuctionItem> {
     AUCTION_MANAGER.auctions.read().await.get(auction_id).cloned()
-}
-
-pub async fn get_auction_by_item_uuid(item_uuid: &str) -> Option<AuctionItem> {
-    let auctions = AUCTION_MANAGER.auctions.read().await;
-    auctions.values().find(|a| a.item_uuid() == item_uuid).cloned()
 }
 
 pub async fn get_auctions_by_player(auctioneer_id: &str) -> Vec<AuctioneerAuctionItem> {

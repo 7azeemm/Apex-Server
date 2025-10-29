@@ -94,14 +94,13 @@ pub struct PlayerProfile {
     bank: Option<u64>,
     first_join: Option<u64>,
     cookie_buff_active: bool,
-    members: Vec<String>,
     fetch_time: Instant,
 }
 
 impl PlayerProfile {
     pub fn new(id: String, name: String, game_mode: String, selected: bool, data: Value, storage: Storage,
                setups: HashMap<SetupType, PlayerSetup>, bank: Option<u64>, purse: u64, first_join: Option<u64>,
-               cookie_buff_active: bool, members: Vec<String>) -> Self {
+               cookie_buff_active: bool) -> Self {
         Self {
             id,
             name,
@@ -116,7 +115,6 @@ impl PlayerProfile {
             purse,
             first_join,
             cookie_buff_active,
-            members,
             fetch_time: Instant::now(),
         }
     }
@@ -133,7 +131,6 @@ impl PlayerProfile {
     pub fn purse(&self) -> u64 { self.purse }
     pub fn first_join(&self) -> &Option<u64> { &self.first_join }
     pub fn cookie_buff_active(&self) -> bool { self.cookie_buff_active }
-    pub fn members(&self) -> &Vec<String> { &self.members }
     pub fn is_expired(&self, threshold: Duration) -> bool {
         Instant::now().duration_since(self.fetch_time) > threshold
     }

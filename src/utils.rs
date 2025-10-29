@@ -7,6 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 
 const NAME_TO_UUID_URL: &str = "https://api.mojang.com/users/profiles/minecraft";
+const NAME_TO_UUID_URL_FALLBACK: &str = "https://playerdb.co/api/player/minecraft";
 const UUID_TO_NAME_URL: &str = "https://api.minecraftservices.com/minecraft/profile/lookup";
 static UUID_CACHE: Lazy<RwLock<HashMap<String, String>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 static NAME_CACHE: Lazy<RwLock<HashMap<String, String>>> = Lazy::new(|| RwLock::new(HashMap::new()));
@@ -20,14 +21,29 @@ pub async fn get_player_uuid(player_name: &str) -> Result<String, Box<dyn Error>
     }
 
     let url = format!("{NAME_TO_UUID_URL}/{player_name}");
-    let json = send_http_request(&url).await?;
+    let json = match send_http_request(&url).await {
+        Ok(json) => Some(json),
+        Err(err) => match err.downcast_ref::<reqwest::Error>() {
+            None => return Err(err),
+            Some(reqwest_err) => {
+                if reqwest_err.is_timeout() || reqwest_err.is_connect() {
+                    match reqwest_err.is_timeout() {
+                        true => eprintln!("Mojang uuid lookup request timed out"),
+                        false => eprintln!("Mojang uuid lookup connection error: {}", reqwest_err)
+                    }
+                    let url = format!("{NAME_TO_UUID_URL_FALLBACK}/{player_name}");
+                    send_http_request(&url).await?.get("data").and_then(|v| v.get("player")).cloned()
+                } else { return Err(err) }
+            }
+        }
+    };
 
-    if let Some(uuid) = json.get_str("id") {
-        {
+    if let Some(json) = json {
+        if let Some(uuid) = json.get_str("id") {
             let mut cache = UUID_CACHE.write().await;
             cache.insert(player_name.to_owned(), uuid.to_owned());
+            return Ok(uuid.to_owned());
         }
-        return Ok(uuid.to_owned());
     }
 
     Err(format!("Couldn't find any player with name {player_name}").into())

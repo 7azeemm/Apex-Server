@@ -2,10 +2,9 @@ use crate::constants::enchantments::{NPC_ENCHANTS, STACKING_ENCHANTS, TIER_FIVE_
 use crate::constants::misc::{GEMSTONES, MASTER_STARS};
 use crate::constants::reforges::{EXCLUDE_REFORGES, NPC_REFORGES, REFORGES_APPLY_COST, REFORGE_STONES};
 use crate::extensions::fastnbt_ext::ValueExt;
-use crate::item_utils::{get_item_name, get_item_rarity, get_pet_info, get_pet_obj, get_pretty_name, get_rarity_index};
+use crate::item_utils::{get_item_name, get_item_rarity, get_pet_info, get_pet_level, get_pet_obj, get_pretty_name, get_rarity_index};
 use crate::prices::auctions::{get_base_price, get_lowest_bin};
 use crate::prices::bazaar::get_buy_price;
-use crate::prices::cosmetic_prices::{get_cosmetic_price, get_pet_networth};
 use crate::repos::neu::essence_costs::get_essence_costs;
 use crate::repos::neu::gemstone_slots_cost::get_item_gemstone_slots;
 use crate::structs::item_structs::{ItemNbt, ItemValue, ModifierContext};
@@ -15,9 +14,10 @@ use crate::utils::format_number;
 use async_trait::async_trait;
 use fastnbt::Value;
 use once_cell::sync::Lazy;
-use std::cmp::{max, min};
+use std::cmp::min;
 use std::collections::HashMap;
 use std::ops::Add;
+use crate::prices::cosmetic_prices::get_cosmetic_price;
 
 const POTATO_BOOK_ID: &str = "HOT_POTATO_BOOK";
 const FUMING_BOOK_ID: &str = "FUMING_POTATO_BOOK";
@@ -47,22 +47,23 @@ static MODIFIERS: Lazy<Vec<(&'static str, Box<dyn ModifierHandler>)>> = Lazy::ne
         ("rarity_upgrades", Box::new(SingleItemModifier::new("Recombobulator", RECOMBOBULATOR_ID))),
         ("artOfPeaceApplied", Box::new(SingleItemModifier::new("Art Of Peace", ART_OF_PEACE_ID))),
         ("art_of_war_count", Box::new(SingleItemModifier::new("Art Of War", ART_OF_WAR_ID))),
-        ("tuned_transmission", Box::new(CountedItemModifier::new("Transmission Tuners", TRANSMISSION_TUNER_ID, Some(4)))),
+        ("tuned_transmission", Box::new(CountedItemModifier::new("Transmission Tuners", TRANSMISSION_TUNER_ID, 4))),
         ("jalapeno_count", Box::new(SingleItemModifier::new("Jalapeno Book", JALAPENO_BOOK_ID))),
-        ("mana_disintegrator_count", Box::new(CountedItemModifier::new("Mana Disintegrators", MANA_DISINTEGRATOR_ID, Some(10)))),
+        ("mana_disintegrator_count", Box::new(CountedItemModifier::new("Mana Disintegrators", MANA_DISINTEGRATOR_ID, 10))),
         ("stats_book", Box::new(SingleItemModifier::new("Stats Book", BOOK_OF_STATS_ID))),
-        ("wet_book_count", Box::new(CountedItemModifier::new("Wet Book", WET_BOOK_ID, Some(5)))),
-        ("farming_for_dummies_count", Box::new(CountedItemModifier::new("Farming For Dummies", FARMING_FOR_DUMMIES_ID, Some(5)))),
+        ("wet_book_count", Box::new(CountedItemModifier::new("Wet Book", WET_BOOK_ID, 5))),
+        ("farming_for_dummies_count", Box::new(CountedItemModifier::new("Farming For Dummies", FARMING_FOR_DUMMIES_ID, 5))),
         ("wood_singularity_count", Box::new(SingleItemModifier::new("Wood Singularity", WOOD_SINGULARITY_ID))),
-        ("polarvoid", Box::new(CountedItemModifier::new("Polarvoid Books", POLARVOID_BOOK_ID, Some(5)))),
+        ("polarvoid", Box::new(CountedItemModifier::new("Polarvoid Books", POLARVOID_BOOK_ID, 5))),
         ("divan_powder_coating", Box::new(SingleItemModifier::new("Divan Powder Coating", DIVAN_POWDER_COATING_ID))),
         ("gems", Box::new(GemstonesModifier)),
         ("ability_scroll", Box::new(AbilityScrollModifier)),
         ("ethermerge", Box::new(EtherwarpConduitModifier)),
         ("power_ability_scroll", Box::new(PowerAbilityScrollModifier)),
         ("talisman_enrichment", Box::new(TalismanEnrichmentModifier)),
-        ("sinker", Box::new(RodSinkerModifier)),
         ("hook", Box::new(RodHookModifier)),
+        ("line", Box::new(RodLineModifier)),
+        ("sinker", Box::new(RodSinkerModifier)),
         ("drill_part_engine", Box::new(DrillPartEngineModifier)),
         ("drill_part_upgrade_module", Box::new(DrillPartUpgradeModuleModifier)),
         ("drill_part_fuel_tank", Box::new(DrillPartFuelTankModifier)),
@@ -73,26 +74,24 @@ static MODIFIERS: Lazy<Vec<(&'static str, Box<dyn ModifierHandler>)>> = Lazy::ne
     ]
 });
 
-pub async fn calculate_item_value(item_id: &str, item_nbt: &ItemNbt) -> ItemValue {
-    let mut item_value = ItemValue::default();
+pub async fn calculate_item_value(item_id: &str, item_nbt: &ItemNbt, include_prices: bool) -> ItemValue {
+    let mut item_value = ItemValue::new(include_prices);
     let Some(attributes) = item_nbt.get_extra_map() else { return item_value };
     let ctx = ModifierContext::new(item_id, item_nbt);
 
     if let Some(item_name) = get_item_name(item_nbt) {
-        item_value.add(&format!("Item Name: {}", item_name));
+        item_value.add_line(&format!("Item Name: {}", item_name));
     }
 
     if let Some(rarity) = get_item_rarity(item_nbt) {
-        item_value.add(&format!("Rarity: {}", get_pretty_name(&rarity)));
+        item_value.add_line(&format!("Rarity: {}", get_pretty_name(&rarity)));
     }
 
-    let price = match get_base_price(item_id).await {
-        None => match get_buy_price(item_id).await {
-            None => get_cosmetic_price(item_id).await.unwrap_or(0),
-            Some(p) => p
-        }
-        Some(p) => p
-    };
+    let price = get_base_price(item_id).await
+        .unwrap_or(get_buy_price(item_id).await
+            .unwrap_or(get_cosmetic_price(item_id).await
+                .unwrap_or_default()));
+
     item_value.set_base_value(price * item_nbt.count());
 
     for (attr, handler) in MODIFIERS.iter() {
@@ -103,7 +102,7 @@ pub async fn calculate_item_value(item_id: &str, item_nbt: &ItemNbt) -> ItemValu
         }
     }
 
-    item_value.add(&format!("Estimated Item Value: {}", format_number(item_value.value())));
+    item_value.add_line(&format!("Estimated Item Value: {}", format_number(item_value.value())));
     item_value
 }
 
@@ -115,11 +114,11 @@ impl ModifierHandler for AbilityScrollModifier {
         let Some(scrolls) = attr.as_list() else { return };
 
         if !scrolls.is_empty() {
-            value.add("Ability Scrolls:");
+            value.add_line("Ability Scrolls:");
             for scroll in scrolls {
                 if let Some(id) = scroll.as_str() {
                     let price = get_buy_price(&id).await;
-                    value.add_v(&format!("- {}", get_pretty_name(id)), price, 1);
+                    value.add(&format!("- {}", get_pretty_name(id)), price, 1);
                 }
             }
         }
@@ -134,14 +133,14 @@ impl ModifierHandler for PotatoBooksModifier {
         let Some(count) = attr.as_u64() else { return };
 
         let hot_potato_books = min(10, count);
-        let fuming_books = max(0, count - 10);
+        let fuming_books = count.saturating_sub(10);
 
         let price = get_buy_price(POTATO_BOOK_ID).await;
-        value.add_v(&format!("Hot Potato Books: {}/10", hot_potato_books), price, hot_potato_books);
+        value.add(&format!("Hot Potato Books: {}/10", hot_potato_books), price, hot_potato_books);
 
         if fuming_books > 0 {
             let price = get_buy_price(FUMING_BOOK_ID).await;
-            value.add_v(&format!("Fuming Books: {}/5", fuming_books), price, fuming_books);
+            value.add(&format!("Fuming Books: {}/5", fuming_books), price, fuming_books);
         }
     }
 }
@@ -155,7 +154,7 @@ impl ModifierHandler for ReforgeModifier {
         if reforge == "none" { return; };
 
         let reforge_price = get_reforge_stone_price(reforge, ctx.item_nbt()).await;
-        value.add_v(&format!("Reforge: {}", get_pretty_name(reforge)), reforge_price, 1);
+        value.add(&format!("Reforge: {}", get_pretty_name(reforge)), reforge_price, 1);
     }
 }
 
@@ -225,7 +224,9 @@ impl ModifierHandler for EnchantmentsModifier {
             enchants_value += get_enchantment_price(name, level).await.unwrap_or(0);
         }
 
-        value.add_v(&format!("Enchantments: [{}]", enchants_list.join(", ")), Some(enchants_value), 1);
+        if !enchants_list.is_empty() {
+            value.add(&format!("Enchantments: [{}]", enchants_list.join(", ")), Some(enchants_value), 1);
+        }
     }
 }
 
@@ -256,7 +257,7 @@ pub struct EtherwarpConduitModifier;
 impl ModifierHandler for EtherwarpConduitModifier {
     async fn calculate_value(&self, _ctx: &ModifierContext<'_>, _attr: &Value, value: &mut ItemValue) {
         let price = get_lowest_bin(ETHERWARP_CONDUIT_ID).await;
-        value.add_v("Etherwarp Conduit: Applied", price, 1);
+        value.add("Etherwarp Conduit: Applied", price, 1);
     }
 }
 
@@ -267,7 +268,7 @@ impl ModifierHandler for PowerAbilityScrollModifier {
     async fn calculate_value(&self, _ctx: &ModifierContext<'_>, attr: &Value, value: &mut ItemValue) {
         let Some(scroll_id) = attr.as_str() else { return };
         let price = get_lowest_bin(scroll_id).await;
-        value.add_v(&format!("{}: Applied", get_pretty_name(scroll_id)), price, 1);
+        value.add(&format!("{}: Applied", get_pretty_name(scroll_id)), price, 1);
     }
 }
 
@@ -309,43 +310,35 @@ impl ModifierHandler for GemstonesModifier {
             }
         }
 
-        let mut gemstones_list = Vec::new();
-        let mut gemstones_value = 0;
-
-        for (gem, count) in gemstones {
-            let price = get_buy_price(&gem).await.unwrap_or(0);
-            gemstones_value += price;
-
-            let gem_name = get_pretty_name(&*gem.replace("_GEM", "_GEMSTONE"));
-            gemstones_list.push(format!("{}x {}", count, gem_name));
+        if !gemstones.is_empty() {
+            value.add_line("Gemstones Applied:");
+            for (gem, count) in gemstones {
+                let gem_name = get_pretty_name(&*gem.replace("_GEM", "_GEMSTONE"));
+                let price = get_buy_price(&gem).await;
+                value.add(&format!("- {}x {}", count, gem_name), price, count);
+            }
         }
 
         if !unlocked_slots.is_empty() {
             if let Some(item_gems) = get_item_gemstone_slots(ctx.item_id()).await {
+                value.add_line("Unlocked Gemstones Slots:");
                 for slot in unlocked_slots.iter() {
-                    if let Some(unlocked_slot) = item_gems.get(slot) {
-                        for cost in unlocked_slot {
-                            let mut parts = cost.splitn(2, ':');
+                    if let Some(slot_cost) = item_gems.get(slot) {
+                        let mut items_cost = 0;
+                        for item in slot_cost {
+                            let mut parts = item.splitn(2, ':');
                             if let (Some(item), Some(count)) = (parts.next(), parts.next()) {
-                                let count: u64 = count.parse().unwrap_or(0);
-                                gemstones_value += match item {
-                                    "SKYBLOCK_COIN" => count,
-                                    _ => get_buy_price(item).await.unwrap_or(get_lowest_bin(item).await.unwrap_or(0))
+                                let count: u64 = count.parse().unwrap_or(1);
+                                let price = if item == "SKYBLOCK_COIN" { 1 } else {
+                                    get_buy_price(item).await.unwrap_or(get_lowest_bin(item).await.unwrap_or(0))
                                 };
+                                items_cost += price * count;
                             }
                         }
+                        value.add(&format!("- {}", get_pretty_name(slot)), Some(items_cost), 1);
                     }
                 }
             }
-        }
-
-        if !gemstones_list.is_empty() {
-            value.add(&format!("Gemstones Applied: [{}]", gemstones_list.join(", ")))
-        }
-
-        if !unlocked_slots.is_empty() {
-            let unlocked_slots: Vec<String> = unlocked_slots.iter().map(|s| get_pretty_name(s)).collect();
-            value.add(&format!("Unlocked Gemstones Slots: [{}]", unlocked_slots.join(", ")))
         }
     }
 }
@@ -370,22 +363,7 @@ impl ModifierHandler for TalismanEnrichmentModifier {
 
         let id = format!("TALISMAN_ENRICHMENT_{}", enrichment.to_uppercase());
         let price = get_lowest_bin(&id).await;
-        value.add_v(&format!("{}: Applied", get_pretty_name(&id)), price, 1);
-    }
-}
-
-pub struct RodSinkerModifier;
-
-#[async_trait]
-impl ModifierHandler for RodSinkerModifier {
-    async fn calculate_value(&self, _ctx: &ModifierContext<'_>, attr: &Value, value: &mut ItemValue) {
-        let Some(sinker) = attr.as_compound() else { return };
-
-        if let Some(Value::String(part)) = sinker.get("part") {
-            let id = &part.to_uppercase();
-            let price = get_lowest_bin(id).await;
-            value.add_v(&format!("Rod Sinker: {}", get_pretty_name(id)), price, 1);
-        }
+        value.add(&format!("{}: Applied", get_pretty_name(&id)), price, 1);
     }
 }
 
@@ -399,7 +377,37 @@ impl ModifierHandler for RodHookModifier {
         if let Some(Value::String(part)) = hook.get("part") {
             let id = &part.to_uppercase();
             let price = get_lowest_bin(id).await;
-            value.add_v(&format!("Rod Hook: {}", get_pretty_name(id)), price, 1);
+            value.add(&format!("Rod Hook: {}", get_pretty_name(id)), price, 1);
+        }
+    }
+}
+
+pub struct RodLineModifier;
+
+#[async_trait]
+impl ModifierHandler for RodLineModifier {
+    async fn calculate_value(&self, _ctx: &ModifierContext<'_>, attr: &Value, value: &mut ItemValue) {
+        let Some(line) = attr.as_compound() else { return };
+
+        if let Some(Value::String(part)) = line.get("part") {
+            let id = &part.to_uppercase();
+            let price = get_lowest_bin(id).await;
+            value.add(&format!("Rod Line: {}", get_pretty_name(id)), price, 1);
+        }
+    }
+}
+
+pub struct RodSinkerModifier;
+
+#[async_trait]
+impl ModifierHandler for RodSinkerModifier {
+    async fn calculate_value(&self, _ctx: &ModifierContext<'_>, attr: &Value, value: &mut ItemValue) {
+        let Some(sinker) = attr.as_compound() else { return };
+
+        if let Some(Value::String(part)) = sinker.get("part") {
+            let id = &part.to_uppercase();
+            let price = get_lowest_bin(id).await;
+            value.add(&format!("Rod Sinker: {}", get_pretty_name(id)), price, 1);
         }
     }
 }
@@ -413,7 +421,7 @@ impl ModifierHandler for DrillPartEngineModifier {
 
         let id = part.to_uppercase();
         let price = get_lowest_bin(&id).await;
-        value.add_v(&format!("Drill Engine: {}", get_pretty_name(&id)), price, 1);
+        value.add(&format!("Drill Engine: {}", get_pretty_name(&id)), price, 1);
     }
 }
 
@@ -426,7 +434,7 @@ impl ModifierHandler for DrillPartUpgradeModuleModifier {
 
         let id = part.to_uppercase();
         let price = get_lowest_bin(&id).await;
-        value.add_v(&format!("Drill Upgrade Module: {}", get_pretty_name(&id)), price, 1);
+        value.add(&format!("Drill Upgrade Module: {}", get_pretty_name(&id)), price, 1);
     }
 }
 
@@ -439,7 +447,7 @@ impl ModifierHandler for DrillPartFuelTankModifier {
 
         let id = part.to_uppercase();
         let price = get_lowest_bin(&id).await;
-        value.add_v(&format!("Drill Fuel Tank: {}", get_pretty_name(&id)), price, 1);
+        value.add(&format!("Drill Fuel Tank: {}", get_pretty_name(&id)), price, 1);
     }
 }
 
@@ -451,12 +459,12 @@ impl ModifierHandler for BoostersModifier {
         let Some(boosters) = attr.as_list() else { return };
 
         if !boosters.is_empty() {
-            value.add("Boosters:");
+            value.add_line("Boosters:");
             for booster in boosters {
                 if let Some(booster) = booster.as_str() {
                     let id = format!("{}_BOOSTER", booster.to_uppercase());
                     let price = get_buy_price(&id).await;
-                    value.add_v(&format!("- {}", get_pretty_name(&id)), price, 1);
+                    value.add(&format!("- {}", get_pretty_name(&id)), price, 1);
                 }
             }
         }
@@ -470,7 +478,7 @@ impl ModifierHandler for SkinModifier {
     async fn calculate_value(&self, _ctx: &ModifierContext<'_>, attr: &Value, value: &mut ItemValue) {
         let Some(skin) = attr.as_str() else { return };
         let price = get_lowest_bin(skin).await;
-        value.add_v(&format!("Skin: {}", &get_pretty_name(skin)), price, 1);
+        value.add(&format!("Skin: {}", &get_pretty_name(skin)), price, 1);
     }
 }
 
@@ -481,7 +489,7 @@ impl ModifierHandler for DyeModifier {
     async fn calculate_value(&self, _ctx: &ModifierContext<'_>, attr: &Value, value: &mut ItemValue) {
         let Some(dye) = attr.as_str() else { return };
         let price = get_lowest_bin(dye).await;
-        value.add_v(&format!("Dye: {}", &get_pretty_name(&*dye.replace("DYE_", ""))), price, 1);
+        value.add(&format!("Dye: {}", &get_pretty_name(&*dye.replace("DYE_", ""))), price, 1);
     }
 }
 
@@ -511,32 +519,30 @@ impl ModifierHandler for UpgradeLevelModifier {
             }
         }
 
-        for (star, id) in MASTER_STARS.iter().enumerate() {
-            if star + 1 <= master_stars as usize {
-                items_cost.insert(id, 1);
+        if let Some(dungeonize_cost) = item_upgrade_costs.dungeonize_cost {
+            if ctx.item_nbt().get_extra_map().and_then(|m| m.get("dungeon_item")).is_some() {
+                essence_amount += dungeonize_cost;
             }
         }
 
-        if is_dungeon_item(ctx.item_nbt()) && let Some(dungeonize_cost) = item_upgrade_costs.dungeonize_cost {
-            essence_amount += dungeonize_cost;
-        }
-
-        let mut stars_value = 0;
-        stars_value += get_buy_price(&essence_id).await.unwrap_or(0);
-
+        let mut stars_cost = 0;
+        items_cost.insert(&essence_id, essence_amount);
         for (item, count) in items_cost {
-            stars_value += get_buy_price(item).await.unwrap_or(0) * count;
+            stars_cost += get_buy_price(item).await.unwrap_or(0) * count;
         }
 
-        value.add_v(&format!("Stars: {regular_stars}/{max_stars}"), Some(stars_value), 1);
+        value.add(&format!("Stars: {regular_stars}/{max_stars}"), Some(stars_cost), 1);
+
         if master_stars > 0 {
-            value.add(&format!("Master Stars: {master_stars}/5"))
+            let mut master_stars_cost = 0;
+            for (star, id) in MASTER_STARS.iter().enumerate() {
+                if star + 1 <= master_stars as usize {
+                    master_stars_cost += get_buy_price(id).await.unwrap_or(0);
+                }
+            }
+            value.add(&format!("Master Stars: {master_stars}/5"), Some(master_stars_cost), 1);
         }
     }
-}
-
-fn is_dungeon_item(item_nbt: &ItemNbt) -> bool {
-    item_nbt.get_extra_map().and_then(|m| m.get("dungeon_item")).is_some()
 }
 
 pub struct PetModifier;
@@ -552,35 +558,59 @@ impl ModifierHandler for PetModifier {
         };
 
         if let Some(pet) = get_pet_obj(&pet_data) {
-            let (pet_info, pet_value) = get_pet_full_info(&pet).await;
-            value.add_value(pet_value);
-            for line in pet_info {
-                value.add(&line);
-            }
+            get_pet_value(&pet, value).await;
         }
     }
 }
 
-pub async fn get_pet_full_info(pet: &Pet) -> (Vec<String>, u64) {
-    let mut vec = Vec::new();
-    let mut value = 0;
-
+pub async fn get_pet_value(pet: &Pet, value: &mut ItemValue) {
     if let Some(pet_info) = get_pet_info(&pet) {
         let price = get_pet_networth(&pet).await;
-        vec.push(format!("Pet: {pet_info}"));
-        value += price;
-
-        if let Some(skin) = pet.skin() {
-            // Skin price is included in pet networth above
-            vec.push(format!("Pet Skin: {}", get_pretty_name(skin)));
+        match pet.skin() {
+            Some(skin) => value.add(&format!("Pet: {pet_info}, Skin: {}", get_pretty_name(skin)), Some(price), 1),
+            None => value.add(&format!("Pet: {pet_info}"), Some(price), 1)
         }
 
         if let Some(held_item) = pet.held_item() {
-            let price = get_lowest_bin(held_item).await.unwrap_or(0);
-            value += price;
-            vec.push(format!("Pet Item: {}", get_pretty_name(held_item)));
+            let price = get_lowest_bin(held_item).await;
+            value.add(&format!("Pet Item: {}", get_pretty_name(held_item)), price, 1);
         }
     }
+}
 
-    (vec, value)
+pub async fn get_pet_networth(pet: &Pet) -> u64 {
+    let (level, _) = get_pet_level(pet.name(), pet.tier(), *pet.xp() as u64);
+    let level = match level {
+        0..100 => 1,
+        100..200 => 100,
+        _ => level
+    };
+    let id = format!("LVL_{level}_{}_{}", pet.tier(), pet.name());
+    let base_id = format!("{}_{}", pet.tier(), pet.name());
+
+    if let Some(skin) = pet.skin() {
+        let id_with_skin = format!("{id}_SKINNED_{skin}");
+        if let Some(price) = get_cosmetic_price(&id_with_skin).await {
+            return price;
+        }
+
+        let mut pet_value = 0;
+        pet_value += match get_cosmetic_price(&id).await {
+            None => get_lowest_bin(&base_id).await.unwrap_or(0),
+            Some(price) => price
+        };
+
+        let skin_id = format!("PET_SKIN_{skin}");
+        pet_value += match get_cosmetic_price(&skin_id).await {
+            None => get_lowest_bin(&skin_id).await.unwrap_or(0),
+            Some(price) => price
+        };
+        return pet_value;
+    }
+
+    if let Some(price) = get_cosmetic_price(&id).await {
+        return price;
+    }
+
+    get_lowest_bin(&base_id).await.unwrap_or(0)
 }

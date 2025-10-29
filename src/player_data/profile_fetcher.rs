@@ -4,7 +4,6 @@ use crate::http::{get_api_key, send_http_request};
 use crate::item_utils::{decode_items, get_item_id, get_item_name, get_pet_level, get_pet_obj, get_pretty_name};
 use crate::structs::item_structs::ItemNbt;
 use crate::structs::player_data_structs::{Donation, Item, PlayerData, PlayerProfile, PlayerSetup, Storage, StringBuilder};
-use crate::utils::get_player_username;
 use rustc_hash::FxHashMap;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
@@ -172,13 +171,6 @@ async fn parse_profile(profile: &Value, player_uuid: &str) -> Option<PlayerProfi
     let player_data = members.get(&player_uuid.replace("-", ""))?;
     let selected = profile.get_bool("selected").unwrap_or(false);
 
-    let mut member_usernames = Vec::new();
-    for member in members.keys() {
-        if let Ok(username) = get_player_username(member).await {
-            member_usernames.push(username);
-        }
-    }
-
     let storage = scan_storage(&player_data);
     let setups = scan_setups(&storage);
     let first_join = player_data.get_u64("profile/first_join");
@@ -193,7 +185,7 @@ async fn parse_profile(profile: &Value, player_uuid: &str) -> Option<PlayerProfi
 
     let player_profile = PlayerProfile::new(
         profile_id.to_owned(), profile_name.to_owned(), game_mode.to_owned(), selected,
-        player_data.clone(), storage, setups, bank, purse, first_join, cookie_buff_active, member_usernames,
+        player_data.clone(), storage, setups, bank, purse, first_join, cookie_buff_active,
     );
 
     Some(player_profile)
@@ -205,7 +197,7 @@ pub async fn get_profiles_info(player_uuid: &str, sb: &mut StringBuilder) {
         let selected_profile = player.selected_profile();
         sb.push("Profiles:".to_owned());
         for (name, (_, game_mode)) in player.profiles_info() {
-            let mut line = format!("- {} ({})", name, get_pretty_name(game_mode));
+            let mut line = format!("- {name} ({})", get_pretty_name(game_mode));
             if let Some(selected) = selected_profile && selected == name {
                 line.push_str(" [Selected]");
             }

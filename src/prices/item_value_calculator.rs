@@ -1,8 +1,7 @@
 use crate::constants::enchantments::{NPC_ENCHANTS, STACKING_ENCHANTS, TIER_FIVE_ENCHANTS, TIER_ONE_ENCHANTS, TIER_THREE_ENCHANTS, UPGRADABLE_ENCHANTS};
 use crate::constants::misc::{GEMSTONES, MASTER_STARS};
-use crate::constants::reforges::{EXCLUDE_REFORGES, NPC_REFORGES, REFORGES_APPLY_COST, REFORGE_STONES};
 use crate::extensions::fastnbt_ext::ValueExt;
-use crate::item_utils::{get_item_name, get_item_rarity, get_pet_info, get_pet_level, get_pet_obj, get_pretty_name, get_rarity_index};
+use crate::item_utils::{get_item_name, get_item_rarity, get_pet_info, get_pet_level, get_pet_obj, get_pretty_name};
 use crate::prices::auctions::{get_base_price, get_lowest_bin};
 use crate::prices::bazaar::get_buy_price;
 use crate::repos::neu::essence_costs::get_essence_costs;
@@ -18,6 +17,7 @@ use std::cmp::min;
 use std::collections::HashMap;
 use std::ops::Add;
 use crate::prices::cosmetic_prices::get_cosmetic_price;
+use crate::repos::neu::reforge_stones::get_reforge_stone;
 
 const POTATO_BOOK_ID: &str = "HOT_POTATO_BOOK";
 const FUMING_BOOK_ID: &str = "FUMING_POTATO_BOOK";
@@ -156,27 +156,19 @@ impl ModifierHandler for ReforgeModifier {
         let Some(reforge) = attr.as_str() else { return };
         if reforge == "none" { return; };
 
-        let reforge_price = get_reforge_stone_price(reforge, ctx.item_nbt()).await;
-        value.add(&format!("Reforge: {}", get_pretty_name(reforge)), reforge_price, 1);
+        let price = match get_reforge_stone(reforge).await {
+            None => None,
+            Some(stone) => {
+                let apply_cost = match get_item_rarity(ctx.item_nbt()) {
+                    Some(rarity) => stone.apply_cost.get(&rarity).cloned().unwrap_or_default(),
+                    None => 0
+                };
+                get_buy_price(stone.id.as_str()).await.map(|p| p.add(apply_cost))
+            }
+        };
+
+        value.add(&format!("Reforge: {}", get_pretty_name(reforge)), price, 1);
     }
-}
-
-async fn get_reforge_stone_price(reforge: &str, item_nbt: &ItemNbt) -> Option<u64> {
-    if EXCLUDE_REFORGES.contains(&reforge) { return None; }
-
-    if let Some(stone_id) = REFORGE_STONES.get(reforge) {
-        let apply_cost = get_apply_cost(stone_id, item_nbt).unwrap_or(0);
-        return get_buy_price(stone_id).await.map(|p| p.add(apply_cost));
-    }
-
-    NPC_REFORGES.get(reforge).map(|p| *p)
-}
-
-fn get_apply_cost(reforge_id: &str, item_nbt: &ItemNbt) -> Option<u64> {
-    let cost_list = REFORGES_APPLY_COST.get(reforge_id)?;
-    let item_rarity = get_item_rarity(item_nbt)?;
-    let rarity_index = get_rarity_index(&item_rarity)?;
-    cost_list.get(rarity_index).map(|v| *v)
 }
 
 pub struct EnchantmentsModifier;

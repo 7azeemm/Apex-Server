@@ -87,10 +87,13 @@ pub async fn calculate_item_value(item_id: &str, item_nbt: &ItemNbt, include_pri
         item_value.add_line(&format!("Rarity: {}", get_pretty_name(&rarity)));
     }
 
-    let price = get_base_price(item_id).await
-        .unwrap_or(get_buy_price(item_id).await
-            .unwrap_or(get_cosmetic_price(item_id).await
-                .unwrap_or_default()));
+    let price = match get_base_price(item_id).await {
+        None => match get_buy_price(item_id).await {
+            None => get_cosmetic_price(item_id).await.unwrap_or_default(),
+            Some(v) => v
+        }
+        Some(v) => v,
+    };
 
     item_value.set_base_value(price * item_nbt.count());
 
@@ -329,8 +332,12 @@ impl ModifierHandler for GemstonesModifier {
                             let mut parts = item.splitn(2, ':');
                             if let (Some(item), Some(count)) = (parts.next(), parts.next()) {
                                 let count: u64 = count.parse().unwrap_or(1);
-                                let price = if item == "SKYBLOCK_COIN" { 1 } else {
-                                    get_buy_price(item).await.unwrap_or(get_lowest_bin(item).await.unwrap_or(0))
+                                let price = match item == "SKYBLOCK_COIN" {
+                                    true => 1,
+                                    false => match get_buy_price(item).await {
+                                        Some(p) => p,
+                                        None => get_lowest_bin(item).await.unwrap_or(0),
+                                    }
                                 };
                                 items_cost += price * count;
                             }

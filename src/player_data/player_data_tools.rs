@@ -10,10 +10,11 @@ use crate::live_data::mayor_info::{get_election_over_time_left, get_mayor_info, 
 use crate::player_data::profile_fetcher::{get_garden_data, get_museum_items};
 use crate::prices::bazaar::get_buy_price;
 use crate::prices::item_value_calculator::{calculate_item_value, get_pet_value};
-use crate::structs::player_data_structs::{PlayerDataResponse, StringBuilder};
+use crate::structs::player_data_structs::{Item, Pet, PlayerDataResponse, StringBuilder};
 use crate::utils::{format_number, format_number_with_commas, get_time_as_secs};
 use serde_json::Value;
 use std::collections::HashMap;
+use crate::repos::neu::items::get_item_display_name;
 use crate::structs::item_structs::ItemValue;
 
 pub async fn get_player_overview(pdr: &mut PlayerDataResponse) {
@@ -589,7 +590,7 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse, detailed: bool) 
         let containers = vec![
             ("Inventory", storage.inventory().clone()),
             ("Enderchest", storage.ender_chest().clone()),
-            ("Backpacks", storage.backpacks().clone()),
+            ("Storage", storage.backpacks().clone()),
             ("Armor", storage.armor().clone()),
             ("Equipment", storage.equipment().clone()),
             ("Wardrobe", storage.get_wardrobe_items().into_iter().cloned().collect()),
@@ -605,30 +606,52 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse, detailed: bool) 
                 item_values.push((item.name().to_owned(), item_value.value()));
                 value += item_value.value();
             }
+
             sb.push(format!("{name}: {} coins", format_number(value)));
             if detailed {
-                for (name, value) in item_values {
-                    sb.push(format!("- {name}: {} coins", format_number(value)));
+                item_values.sort_by(|a, b| b.1.cmp(&a.1));
+                for (item_name, value) in item_values.iter().take(50) {
+                    sb.push(format!("- {item_name}: {} coins", format_number(*value)));
                 }
                 sb.pushln();
             }
             total_value += value;
         }
 
+        let mut item_values = Vec::new();
         let mut sacks_value = 0;
         for (item, amount) in storage.sacks() {
-            sacks_value += get_buy_price(item).await.unwrap_or(0) * amount;
+            let price = get_buy_price(item).await.unwrap_or(0) * amount;
+            sacks_value += price;
+            item_values.push((format!("{}x {}", amount, get_pretty_name(item)), price));
         }
+
         sb.push(format!("Sacks: {} coins", format_number(sacks_value)));
+        if detailed {
+            item_values.sort_by(|a, b| b.1.cmp(&a.1));
+            for (name, price) in item_values.iter().take(50) {
+                sb.push(format!("- {name}: {} coins", format_number(*price)));
+            }
+        }
         total_value += sacks_value;
 
+        let mut item_values = Vec::new();
         let mut pets_value = 0;
         for pet in storage.pets() {
             let mut value = ItemValue::new(detailed);
             get_pet_value(pet, &mut value).await;
-            pets_value += value.value();
+            let price = value.value();
+            pets_value += price;
+            item_values.push((get_pet_info(&pet).unwrap_or(pet.name().to_owned()), price));
         }
+
         sb.push(format!("Pets: {} coins", format_number(pets_value)));
+        if detailed {
+            item_values.sort_by(|a, b| b.1.cmp(&a.1));
+            for (pet, price) in item_values.iter().take(50) {
+                sb.push(format!("- {}: {} coins", pet, format_number(*price)));
+            }
+        }
         total_value += pets_value;
     }
 
@@ -753,125 +776,160 @@ fn get_level_and_progress(xp_table: &[u64], xp: u64, default: u64, max: u64, cap
     (level, str)
 }
 
-//todo: separate pet and item
-pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, is_pet: bool, include_prices: bool) {
+pub async fn get_pet(pdr: &mut PlayerDataResponse, item_name: &str, include_prices: bool) {
     let mut sb = StringBuilder::new();
     let storage = pdr.profile().storage();
 
-    if is_pet {
-        let pet_names: Vec<String> = storage.pets().iter()
-            .map(|pet| get_pretty_name(pet.name()))
-            .collect();
+    // Collect pets
+    let pets: HashMap<String, &Pet> = storage.pets().iter()
+        .map(|pet| (get_pretty_name(pet.name()), pet))
+        .collect();
+    let pet_names: Vec<String> = pets.keys().map(|n| n.to_owned()).collect();
 
-        let matches = find_best_match(item_name, &pet_names);
-        if !matches.is_empty() {
-            let best_match = *matches.first().unwrap();
-            let pet = storage.pets().iter()
-                .find(|pet| get_pretty_name(pet.name()) == best_match)
-                .map(|pet| (*pet).clone());
+    // Find best matches
+    let matches = find_best_matches(item_name, &pet_names);
+    let Some(best_pet) = matches.first() else {
+        sb.push("Couldn't find any matching pet!".to_owned());
+        pdr.set_resp(sb);
+        return;
+    };
 
-            if let Some(pet) = pet {
-                let mut value = ItemValue::new(include_prices);
-                get_pet_value(&pet, &mut value).await;
-                for line in value.info() {
-                    sb.push(line.to_owned());
-                }
-                sb.push(format!("Estimated Pet Value: {} coins", format_number_with_commas(value.value())));
-                if *pet.active() {
-                    sb.push("The Pet is Active".to_owned());
-                }
-            } else {
-                sb.push("Couldn't find any pet matches!".to_owned())
+    // Try to find in pets
+    match pets.iter().find(|(name, _)| name == best_pet) {
+        None => sb.push("Couldn't find any matching pet!".to_owned()),
+        Some((_, pet)) => {
+            let mut value = ItemValue::new(include_prices);
+            get_pet_value(&pet, &mut value).await;
+            for line in value.info() {
+                sb.push(line.to_owned());
             }
-
-            if matches.len() > 1 {
-                sb.pushln();
-                sb.push("Other Similar Pets:".to_owned());
-                for pet in matches.iter().skip(1) {
-                    sb.push(format!("- {pet}"));
-                }
+            sb.push(format!("Estimated Pet Value: {} coins", format_number_with_commas(value.value())));
+            if *pet.active() {
+                sb.push("The Pet is Active".to_owned());
             }
-        } else {
-            sb.push("Couldn't find any pet matches!".to_owned())
         }
-    } else {
-        let items = storage.get_items_list();
-        let mut item_names: Vec<String> = items.iter().map(|item| item.name().to_owned()).collect();
-        let sacks = storage.sacks();
-        let sack_names: HashMap<String, String> = sacks.iter().map(|(s, _)| (get_pretty_name(s), s.to_owned())).collect();
-        item_names.extend(sack_names.keys().cloned());
-        item_names.dedup();
+    }
 
-        let matches = find_best_match(item_name, &item_names);
-        if !matches.is_empty() {
-            let item_name = *matches.first().unwrap();
-            let item = items.iter()
-                .find(|item| item.name() == item_name)
-                .map(|item| (*item).clone());
-
-            if let Some(ref item) = item {
-                let &count = item.count();
-                sb.push(match count > 1 {
-                    true => format!("Item: {count}x {item_name}"),
-                    false => format!("Item: {item_name}")
-                });
-                let value = calculate_item_value(item.item_id(), item.nbt(), include_prices).await;
-                for line in value.info().iter().skip(1) {
-                    sb.push(line.to_owned());
-                }
-            } else if let Some(item_id) = sack_names.get(item_name) && let Some(amount) = sacks.get(item_id) {
-                sb.push(format!("Item: {amount}x {item_name} (Found in Sacks)"));
-            } else {
-                sb.push("Couldn't find any item matches!".to_owned())
-            }
-
-            if matches.len() > 1 {
-                sb.pushln();
-                sb.push("Other Similar Items:".to_owned());
-                for item in matches.iter().skip(1) {
-                    sb.push(format!("- {item}"));
-                }
-            }
-        } else {
-            sb.push("Couldn't find any item matches!".to_owned())
+    // Add similar pets
+    if matches.len() > 1 {
+        sb.pushln();
+        sb.push("Other Similar Pets:".to_owned());
+        for pet in matches.iter().skip(1) {
+            sb.push(format!("- {pet}"));
         }
     }
 
     pdr.set_resp(sb);
 }
 
-fn find_best_match<'a>(query: &'a str, list: &'a [String]) -> Vec<&'a str> {
-    fn word_overlap_score(candidate: &str, query: &str) -> usize {
-        let lowercase = query.to_lowercase();
-        let query_words: Vec<_> = lowercase.split_whitespace().collect();
-        let candidate = candidate.to_lowercase();
+pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, include_prices: bool) {
+    let mut sb = StringBuilder::new();
+    let storage = pdr.profile().storage();
 
-        query_words.iter().filter(|w| candidate.contains(*w)).count()
+    // Collect storage items
+    let mut items: Vec<(String, &Item)> = Vec::new();
+    for item in storage.get_items_list() {
+        let display_name = get_item_display_name(item.item_id()).await.unwrap_or(item.name().to_owned());
+        items.push((display_name, item));
     }
 
-    // 1. Collect scores
-    let mut scored: Vec<(&str, usize)> = list
-        .iter()
-        .map(|item| (item.as_str(), word_overlap_score(item, query)))
-        .collect();
+    // Collect sack items
+    let mut sack_items = HashMap::new();
+    for (id, amount) in storage.sacks().iter() {
+        let name = get_item_display_name(id).await.unwrap_or(get_pretty_name(id));
+        sack_items.insert(name, *amount);
+    }
 
-    // 2. Sort by overlap
-    scored.sort_by(|a, b| b.1.cmp(&a.1));
+    // Build combined searchable list
+    let mut item_names: Vec<String> = items.iter().map(|(n, _)| n.clone()).collect();
+    item_names.extend(sack_items.keys().cloned());
+    item_names.sort();
+    item_names.dedup();
 
-    // 3. Take top N
-    let best_matches: Vec<&str> = scored.iter().take(5).filter(|(_, s)| *s > 0).map(|(s, _)| *s).collect();
+    // Find best matches
+    let matches = find_best_matches(item_name, &item_names);
+    let Some(best_item) = matches.first() else {
+        sb.push("Couldn't find any matching item!".to_owned());
+        pdr.set_resp(sb);
+        return;
+    };
 
-    // 4. Exact (case-insensitive) match prioritization
-    if let Some((exact, _)) = scored.iter().find(|(cand, _)| cand.eq_ignore_ascii_case(query)) {
-        let mut out = Vec::with_capacity(best_matches.len() + 1);
-        out.push(*exact); // ensure exact match first
-        for m in best_matches {
-            if m != *exact {
-                out.push(m);
+    // Try to find in items
+    match items.iter().find(|(name, _)| name == best_item) {
+        Some((_, item)) => {
+            let name = item.name();
+            let &count = item.count();
+            sb.push(match count > 1 {
+                true => format!("Item: {count}x {name}"),
+                false => format!("Item: {name}")
+            });
+
+            let value = calculate_item_value(item.item_id(), item.nbt(), include_prices).await;
+            for line in value.info().iter().skip(1) {
+                sb.push(line.to_owned());
+            }
+        },
+        None => match sack_items.get(*best_item) {
+            Some(amount) => sb.push(format!("Item: {amount}x {best_item} (in Sacks)")),
+            None => sb.push("Couldn't find any matching item!".to_owned())
+        }
+    }
+
+    // Add similar items
+    if matches.len() > 1 {
+        sb.pushln();
+        sb.push("Other Similar Items:".to_owned());
+        for item in matches.iter().skip(1) {
+            sb.push(format!("- {item}"));
+        }
+    }
+
+    pdr.set_resp(sb);
+}
+
+fn find_best_matches<'a>(query: &'a str, list: &'a [String]) -> Vec<&'a str> {
+    fn score(candidate: &str, query: &str) -> usize {
+        let query_lowercase = query.to_lowercase();
+        let candidate_lowercase = candidate.to_lowercase();
+        let query_words: Vec<_> = query_lowercase.split_whitespace().collect();
+        let candidate_words: Vec<_> = candidate_lowercase.split_whitespace().collect();
+        let mut score = 0;
+
+        for qw in &query_words {
+            score += match () {
+                _ if candidate_words.iter().any(|cw| cw == qw) => 5, // Exact match
+                _ if candidate_words.iter().any(|cw| cw.starts_with(qw)) => 3, // Prefix match
+                _ if candidate_words.iter().any(|cw| cheap_distance(cw, qw) <= 2) => 2, // Fuzzy match: allow 1-2 typos
+                _ => 0
+            };
+        }
+
+        score
+    }
+
+    // char-difference distance
+    fn cheap_distance(a: &str, b: &str) -> usize {
+        let a: Vec<char> = a.chars().collect();
+        let b: Vec<char> = b.chars().collect();
+        let len = a.len().max(b.len());
+        let mut dif = 0;
+        for i in 0..len {
+            if a.get(i) != b.get(i) {
+                dif += 1;
             }
         }
-        return out;
+        dif
     }
 
-    best_matches
+    let mut scored: Vec<(&str, usize)> = list
+        .iter()
+        .map(|item| (item.as_str(), score(item, query)))
+        .filter(|(_, s)| *s > 0)
+        .collect();
+
+    // Sort descending by score, then shorter names
+    scored.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.len().cmp(&b.0.len())));
+
+    // Return top 5
+    scored.into_iter().take(5).map(|(s, _)| s).collect()
 }

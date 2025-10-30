@@ -34,7 +34,11 @@ async fn update() -> Result<(), Box<dyn Error>> {
     if let Some(map) = json.as_object() {
         let mut data = DATA.write().await;
         data.clear();
-        data.extend(map.iter().filter_map(|(k, v)| v.as_u64().map(|val| (k.clone(), val))));
+        data.extend(map.iter().filter_map(|(k, v)| {
+            v.as_u64()
+                .or_else(|| v.as_f64().map(|f| f as u64))
+                .map(|val| (k.clone(), val))
+        }));
     }
 
     Ok(())

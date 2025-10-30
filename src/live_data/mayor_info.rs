@@ -37,7 +37,7 @@ pub async fn schedule() {
 async fn update_mayors_info() -> Result<(), Box<dyn Error>> {
     let json = send_http_request(MAYOR_ENDPOINT).await?;
 
-    if !json.get_bool("success").unwrap_or(false) {
+    if !json.get_bool("success").unwrap_or_default() {
         return Err("[Mayor-Info] API Request was not successful".into());
     }
 

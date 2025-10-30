@@ -46,13 +46,13 @@ async fn get_player_status(player_uuid: &str) -> Option<String> {
     match send_http_request(&format!("{STATUS_ENDPOINT}?key={}&uuid={}", get_api_key(), player_uuid)).await {
         Err(err) => eprintln!("Err: {:?}", err),
         Ok(json) => {
-            if json.get_bool("success").unwrap_or(false) && let Some(session) = json.get("session") {
-                let online = session.get_bool("online").unwrap_or(false);
+            if json.get_bool("success").unwrap_or_default() && let Some(session) = json.get("session") {
+                let online = session.get_bool("online").unwrap_or_default();
                 let online_str = if online { "Online" } else { "Offline" };
                 let mut str = format!("Status: {online_str}");
                 if online {
                     if let Some(game_type) = session.get_str("gameType") {
-                        let island_name = ISLAND_NAMES.get(game_type).map(|s| s.to_string()).unwrap_or(get_pretty_name(game_type));
+                        let island_name = ISLAND_NAMES.get(game_type).map(|s| s.to_string()).unwrap_or_else(|| get_pretty_name(game_type));
                         str.push_str(&format!(" in {}", island_name));
 
                         if let Some(mode) = session.get_str("mode") {

@@ -15,7 +15,7 @@ mod helpers;
 use crate::endpoints::{get_auction_by_auction_id, get_auctions_by_auctioneer, get_price};
 use crate::live_data::{jacob_contests, mayor_info};
 use crate::player_data::profile_fetcher::profile_cleaner;
-use crate::prices::{auctions, bazaar, cosmetic_prices};
+use crate::prices::{bazaar, cosmetic_prices};
 use crate::repos::repo_manager;
 use axum::routing::get;
 use axum::Router;
@@ -23,10 +23,11 @@ use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::net::SocketAddr;
+use std::time::Instant;
 use tokio::net::TcpListener;
 use tokio::signal;
-use crate::player_data::player_data_tools::get_profile_networth;
-use crate::structs::player_data_structs::PlayerDataResponse;
+use crate::player_data::player_data_tools::{get_item};
+use crate::structs::player_data_structs::{PlayerDataResponse};
 
 macro_rules! run_tools {
     ($pdr:expr, $($tool:expr),+ $(,)?) => {
@@ -46,22 +47,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
     mayor_info::schedule().await;
     jacob_contests::schedule().await;
     bazaar::schedule().await;
-    auctions::schedule().await;
     cosmetic_prices::schedule().await;
+    // auctions::schedule().await;
     profile_cleaner();
 
-    let mut pdr = PlayerDataResponse::new("56ms".to_owned(), None).await?;
-    get_profile_networth(&mut pdr, false).await;
+    let mut pdr = PlayerDataResponse::new("7azem_".to_owned(), None).await?;
+    // get_profile_networth(&mut pdr, false).await;
     println!("{}", pdr.get_resp().unwrap_or("No Text".to_owned()));
 
-    // for item in vec!["Titanium Drill DR-X655", "Inferno Rod", "Midas Staff", "Reaper Falchion", "Terminator", "Maxor's Leggings", "Helmet of Divan",
-    //                  "Golden Necron Head", "Necron's Chestplate", "Storm's Chestplate", "Burning Crimson Chestplate",
-    //                 "Hot Crimson Leggings", "Gold Hunter Chestplate", "Warden Helmet", "Ring of Love", "Aspect of the Void",
-    //                  "Figstone Splitter", "Atomsplit Katana", "Rod of the Sea"] {
-    //     get_item(&mut pdr, item, false, true).await;//pets
-    //     println!("{}", pdr.get_resp().unwrap_or("No Text".to_owned()));
-    //     println!("------");
-    // }
+    for item in vec!["Aspect of the Veid", "Storm's botts", "Burning crimson chestpalte", "Terror chastplate", "Necron's cheetplate",
+                     "Fermonto Chestplate", "Golden Necrun", "Diamond", "Enchanted Diamond", "Diamand"
+    ] {
+        let i = Instant::now();
+        get_item(&mut pdr, item, true).await;
+        println!("--- {} --- {:?}", item, i.elapsed());
+        println!("{}", pdr.get_resp().unwrap_or("No Text".to_owned()));
+        println!("------");
+    }
 
     // for item in vec!["Golden Dragon", "Flying Fish", "Scatha", "Tiger"] {
     //     get_item(&mut pdr, item, true, true).await;

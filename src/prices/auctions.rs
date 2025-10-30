@@ -13,6 +13,7 @@ use std::sync::LazyLock;
 use std::time::{Duration, Instant};
 use tokio::sync::Notify;
 use tokio::time::{interval, interval_at, sleep};
+use crate::prices::cosmetic_prices::get_cosmetic_price;
 
 const API_ENDPOINT: &str = "https://api.hypixel.net/v2/skyblock/auctions";
 const THRESHOLD: u64 = 70;
@@ -224,7 +225,10 @@ pub async fn get_base_price(item_id: &str) -> Option<u64> {
 }
 
 pub async fn get_lowest_bin(item_id: &str) -> Option<u64> {
-    AUCTION_MANAGER.lowest_bins.read().await.get(item_id).map(|i| *i.price())
+    match AUCTION_MANAGER.lowest_bins.read().await.get(item_id).map(|i| *i.price()) {
+        Some(p) => Some(p),
+        None => get_cosmetic_price(item_id).await
+    }
 }
 
 pub async fn get_lowest_bin_and_id(item_id: &str) -> Option<(u64, String)> {

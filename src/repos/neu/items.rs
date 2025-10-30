@@ -72,8 +72,11 @@ pub async fn load_accessories() {
             if let Some(Value::String(last_line)) = lore.last() {
                 if ACCESSORY_RARITIES.iter().any(|r| last_line.contains(r)) {
                     let stripped_line = strip_formatting(last_line);
-                    let rarity = RARITIES.iter().find(|r| stripped_line.starts_with(*r)).unwrap();
-                    accessories.insert(item_id.to_owned(), rarity.to_string());
+                    let rarity = RARITIES.iter()
+                        .find(|r| stripped_line.starts_with(*r))
+                        .map(|s| s.to_string())
+                        .unwrap_or_default();
+                    accessories.insert(item_id.to_owned(), rarity);
                 }
             }
         }
@@ -82,4 +85,13 @@ pub async fn load_accessories() {
     let mut map = ACCESSORIES.write().await;
     *map = accessories;
     println!("[NEU-Repo] Loaded {} accessories in {:.2?}", map.len(), start_time.elapsed());
+}
+
+pub async fn get_item_display_name(item_id: &str) -> Option<String> {
+    if let Some(item) = ITEMS.read().await.get(item_id) {
+        if let Some(display_name) = item.get_str("displayname") {
+            return Some(strip_formatting(display_name))
+        }
+    }
+    None
 }

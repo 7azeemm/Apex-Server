@@ -44,7 +44,7 @@ pub const SLAYER_XP_REQUIRED: Map<&'static str, &[u64]> = phf_map! {
 };
 
 pub const ISLAND_NAMES: Map<&'static str, &'static str> = phf_map! {
-    "dynamic" => "Island",
+    "dynamic" => "Private Island",
     "farming_1" => "Barn",
     "foraging_1" => "Park",
     "foraging_2" => "Galatea",
@@ -53,5 +53,27 @@ pub const ISLAND_NAMES: Map<&'static str, &'static str> = phf_map! {
     "mining_3" => "Dwarven Mines",
     "combat_1" => "Spider's Den",
     "combat_3" => "The End",
-    "fishing_1" => "Backwater Bayou"
+    "fishing_1" => "Backwater Bayou",
+    "winter" => "Jerry's Workshop",
+    "mineshaft" => "Glacite Mineshafts",
+};
+
+/// Talismans that do not change their ids when they get upgraded
+pub const SPECIAL_TALISMANS: &[(&str, &[&str])] = &[
+    ("PULSE_RING", &["UNCOMMON", "RARE", "EPIC", "LEGENDARY"]),
+    ("BOOK_OF_PROGRESSION", &["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC"]),
+    ("RUNEBOOK", &["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY"]),
+    ("PANDORAS_BOX", &["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC"]),
+    ("TRAPPER_CREST", &["COMMON", "UNCOMMON"])
+];
+
+pub const MAGICAL_POWER: Map<&'static str, u64> = phf_map! {
+    "COMMON" => 3,
+    "UNCOMMON" => 5,
+    "RARE" => 8,
+    "EPIC" => 12,
+    "LEGENDARY" => 16,
+    "MYTHIC" => 22,
+    "SPECIAL" => 3,
+    "VERY_SPECIAL" => 5
 };

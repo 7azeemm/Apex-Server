@@ -17,16 +17,17 @@ pub async fn load_talisman_upgrades() {
                 let talisman_upgrades: HashMap<String, Vec<String>> = talisman_upgrades.iter()
                     .map(|(k, v)| {
                         let upgrades = v.as_array()
-                            .expect("expected array in value")
+                            .unwrap()
                             .iter()
-                            .map(|val| val.as_str().expect("expected string").to_owned())
+                            .map(|val| val.as_str().unwrap().to_owned())
                             .collect::<Vec<_>>();
                         (k.clone(), upgrades)
                     })
                     .collect();
 
+                let upgrade_lines = build_upgrade_lines(&talisman_upgrades);
                 let mut current_map = TALISMAN_UPGRADES.write().await;
-                *current_map = build_upgrade_lines(&talisman_upgrades);
+                *current_map = upgrade_lines;
             }
 
             if let Some(ignored_talismans) = items.get("ignored_talisman").and_then(|m| m.as_array()) {
@@ -50,28 +51,31 @@ fn build_upgrade_lines(map: &HashMap<String, Vec<String>>) -> Vec<Vec<String>> {
     let mut ordered_upgrades: Vec<Vec<String>> = Vec::new();
 
     for (item_id, upgrades) in map {
-        if let Some(matching_upgrade) = ordered_upgrades.iter_mut().find(|ordered_upgrade| {
+        let matching_upgrade = ordered_upgrades.iter_mut().find(|ordered_upgrade| {
             ordered_upgrade.iter()
                 .any(|x| x == item_id) || ordered_upgrade
                 .iter()
                 .any(|x| upgrades.iter().any(|u| u == x))
-        }) {
-            // Replace if new chain is longer (or equal length)
-            if matching_upgrade.len() <= upgrades.len() {
-                matching_upgrade.clear();
-                matching_upgrade.push(item_id.to_string());
-                matching_upgrade.extend_from_slice(upgrades);
+        });
+
+        match matching_upgrade {
+            Some(matching_upgrade) => {
+                // Replace if new chain is longer (or equal length)
+                if matching_upgrade.len() <= upgrades.len() {
+                    matching_upgrade.clear();
+                    matching_upgrade.push(item_id.to_string());
+                    matching_upgrade.extend_from_slice(upgrades);
+                }
             }
-        } else {
-            // Otherwise create new upgrade chain
-            let mut new_upgrade = Vec::with_capacity(1 + upgrades.len());
-            new_upgrade.push(item_id.to_string());
-            new_upgrade.extend_from_slice(upgrades);
-            ordered_upgrades.push(new_upgrade);
+            None => {
+                // Otherwise create new upgrade chain
+                let mut new_upgrade = Vec::with_capacity(1 + upgrades.len());
+                new_upgrade.push(item_id.to_string());
+                new_upgrade.extend_from_slice(upgrades);
+                ordered_upgrades.push(new_upgrade);
+            }
         }
     }
-
-    // println!("{:#?}", ordered_upgrades);
 
     ordered_upgrades
 }

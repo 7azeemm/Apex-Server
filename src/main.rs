@@ -27,6 +27,7 @@ use tokio::net::TcpListener;
 use tokio::signal;
 use crate::structs::player_data_structs::{PlayerDataResponse};
 
+//TODO: monitor time spent per tool
 macro_rules! run_tools {
     ($pdr:expr, $($tool:expr),+ $(,)?) => {
         $(
@@ -49,7 +50,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     auctions::schedule().await;
     profile_cleaner();
 
-    let mut pdr = PlayerDataResponse::new("7azem_".to_owned(), None).await?;
+    let mut pdr = PlayerDataResponse::new("7azem_".to_owned(), Some("Tomato".to_owned())).await?;
 
     // run_tools!(
     //     pdr,

@@ -89,7 +89,7 @@ pub struct PlayerProfile {
     garden: Option<Value>,
     storage: Storage,
     setups: HashMap<SetupType, PlayerSetup>,
-    museum: Option<Vec<Donation>>,
+    museum: Option<Vec<MuseumDonation>>,
     purse: u64,
     bank: Option<u64>,
     first_join: Option<u64>,
@@ -126,7 +126,7 @@ impl PlayerProfile {
     pub fn data(&self) -> &Value { &self.data }
     pub fn garden(&self) -> &Option<Value> { &self.garden }
     pub fn storage(&self) -> &Storage { &self.storage }
-    pub fn museum(&self) -> &Option<Vec<Donation>> { &self.museum }
+    pub fn museum(&self) -> &Option<Vec<MuseumDonation>> { &self.museum }
     pub fn bank(&self) -> Option<u64> { self.bank }
     pub fn purse(&self) -> u64 { self.purse }
     pub fn first_join(&self) -> &Option<u64> { &self.first_join }
@@ -143,12 +143,12 @@ impl PlayerProfile {
     }
 
     pub fn set_garden_data(&mut self, data: Value) { self.garden = Some(data); }
-    pub fn set_museum_data(&mut self, data: Vec<Donation>) { self.museum = Some(data); }
+    pub fn set_museum_data(&mut self, data: Vec<MuseumDonation>) { self.museum = Some(data); }
 }
 
 #[derive(Clone, new, Getters)]
 #[getset(get = "pub")]
-pub struct Donation {
+pub struct MuseumDonation {
     id: String,
     slot: String,
     borrowing: bool,

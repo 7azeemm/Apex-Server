@@ -4,3 +4,4 @@ pub mod essence_costs;
 pub mod talisman_upgrades;
 pub mod items;
 pub mod reforge_stones;
+pub mod museum_donations;

@@ -6,6 +6,7 @@ use crate::repos::repo_manager;
 use crate::structs::repo_structs::Repo;
 use serde_json::Value;
 use std::error::Error;
+use crate::repos::neu::museum_donations::load_museum_donations;
 use crate::repos::neu::reforge_stones::load_reforge_stones;
 
 const REPO_PATH: &str = "neu_repo";
@@ -20,6 +21,7 @@ pub async fn schedule() {
         threshold: 3600,
     };
 
+    //TODO: error handling should be moved here
     repo.schedule(|| async {
         load_items(&format!("{REPO_PATH}/items")).await;
         load_accessories().await;
@@ -27,6 +29,7 @@ pub async fn schedule() {
         load_essence_costs().await;
         load_talisman_upgrades().await;
         load_reforge_stones().await;
+        load_museum_donations().await;
     }).await;
 }
 

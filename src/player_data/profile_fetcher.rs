@@ -3,7 +3,7 @@ use crate::extensions::json_ext::JsonExt;
 use crate::http::{get_api_key, send_http_request};
 use crate::item_utils::{decode_items, get_item_id, get_item_name, get_pet_level, get_pet_obj, get_pretty_name};
 use crate::structs::item_structs::ItemNbt;
-use crate::structs::player_data_structs::{Donation, Item, PlayerData, PlayerProfile, PlayerSetup, Storage, StringBuilder};
+use crate::structs::player_data_structs::{MuseumDonation, Item, PlayerData, PlayerProfile, PlayerSetup, Storage, StringBuilder};
 use rustc_hash::FxHashMap;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
@@ -129,7 +129,7 @@ pub async fn get_garden_data(profile: &mut PlayerProfile) -> &Option<Value> {
     profile.garden()
 }
 
-pub async fn get_museum_items<'a>(player_uuid: &str, profile: &'a mut PlayerProfile) -> &'a Option<Vec<Donation>> {
+pub async fn get_museum_items<'a>(player_uuid: &str, profile: &'a mut PlayerProfile) -> &'a Option<Vec<MuseumDonation>> {
     if profile.museum().is_some() {
         return profile.museum();
     }
@@ -149,7 +149,7 @@ pub async fn get_museum_items<'a>(player_uuid: &str, profile: &'a mut PlayerProf
 
                         let slot = data.get_str("featured_slot").unwrap_or("").to_owned();
                         let borrowing = data.get_bool("borrowing").unwrap_or(false);
-                        let donation = Donation::new(id.to_owned(), slot, borrowing, items);
+                        let donation = MuseumDonation::new(id.to_owned(), slot, borrowing, items);
                         donations_list.push(donation);
                     }
                     profile.set_museum_data(donations_list);

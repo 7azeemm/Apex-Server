@@ -7,7 +7,7 @@ use crate::extensions::json_ext::JsonExt;
 use crate::item_utils::{get_pet_info, get_pet_obj, get_pretty_name};
 use crate::live_data::jacob_contests::get_upcoming_contests;
 use crate::live_data::mayor_info::{get_election_over_time_left, get_mayor_info, get_skyblock_date, get_special_mayors_info};
-use crate::player_data::profile_fetcher::{get_garden_data, get_museum_items};
+use crate::tools::profile_fetcher::{get_garden_data, get_museum_items};
 use crate::prices::bazaar::get_buy_price;
 use crate::prices::item_value_calculator::{calculate_item_value, get_pet_value};
 use crate::structs::player_data_structs::{Item, Pet, PlayerDataResponse, StringBuilder};
@@ -58,7 +58,7 @@ pub async fn get_player_overview(pdr: &mut PlayerDataResponse) {
     }
 
     // Skills
-    if let Some(skills) = data.get_object("player_data/experience") && !skills.is_empty() {
+    if let Some(skills) = data.get_object("tools/experience") && !skills.is_empty() {
         sb.push("Skills:".to_owned());
         let mut total_level = 0;
         let mut count = 0;
@@ -134,10 +134,6 @@ pub async fn get_mining_info(pdr: &mut PlayerDataResponse) {
                 sb.push(format!("- {}: {count}", get_pretty_name(corpse)));
             }
         }
-        // if let Some(fossils_donated) = glacite_core.get_array("fossils_donated") {
-        //     let fossils: Vec<String> = fossils_donated.iter().filter_map(|v| v.as_str()).map(|s| get_pretty_name(s)).collect();
-        //     sb.push(format!("Fossils donated: {}", fossils.join(", ")));
-        // }
     }
 
     pdr.set_resp(sb);
@@ -254,14 +250,6 @@ pub async fn get_fishing_info(pdr: &mut PlayerDataResponse) {
     sb.pushln();
     pdr.profile().add_setup_info(SetupType::Fishing, &mut sb);
 
-    // if let Some(trophy_fishing) = profile_data.get_array("trophy_fish") {
-    //     sb.push("TrophyFishing:".to_owned());
-    //     for fish in TROPHY_FISHES {
-    //         let count = trophy_fishing.get_u64(fish).unwrap_or(0);
-    //         sb.push(format!("- {}: {}", get_pretty_name(fish), count));
-    //     }
-    // }
-
     pdr.set_resp(sb);
 }
 
@@ -368,10 +356,7 @@ pub async fn get_dungeons_info(pdr: &mut PlayerDataResponse) {
     pdr.set_resp(sb);
 }
 
-//TODO: don't require profile and should be in different space with price tools
-pub async fn get_events_info(pdr: &mut PlayerDataResponse) {
-    let mut sb = StringBuilder::new();
-
+pub async fn get_events_info(sb: &mut StringBuilder) {
     sb.push(format!("SkyBlock Date: {}", get_skyblock_date()));
     sb.pushln();
 
@@ -436,6 +421,60 @@ pub async fn get_events_info(pdr: &mut PlayerDataResponse) {
                 let formatted_time = format!("{:02}:{:02}:{:02}", hours, minutes, seconds);
 
                 sb.push(format!("- [{}] after {}mins (at {})", crops_str, total_minutes, formatted_time));
+            }
+        }
+    }
+}
+
+pub async fn get_inventory(pdr: &mut PlayerDataResponse) {
+    let mut sb = StringBuilder::new();
+    let storage = pdr.profile().storage();
+
+    let armor = storage.armor();
+    match armor.is_empty() {
+        true => sb.push("Armor: unavailable".to_owned()),
+        false => {
+            sb.push("Armor:".to_owned());
+            for piece in armor {
+                sb.push(format!("- {}", piece.name()));
+            }
+        }
+    }
+
+    let equipment = storage.equipment();
+    match equipment.is_empty() {
+        true => sb.push("Equipment: unavailable".to_owned()),
+        false => {
+            sb.push("Equipment:".to_owned());
+            for piece in equipment {
+                sb.push(format!("- {}", piece.name()));
+            }
+        }
+    }
+
+    sb.pushln();
+
+    let inventory = storage.inventory();
+    match inventory.is_empty() {
+        true => sb.push("Inventory: unavailable".to_owned()),
+        false => {
+            sb.push("Inventory:".to_owned());
+            let mut items: Vec<(&str, u64)> = Vec::new();
+
+            for item in inventory {
+                let &count = item.count();
+                let item_name = item.name();
+                match items.iter_mut().find(|(name, _)| *name == item_name) {
+                    Some((_, c)) => *c += count,
+                    None => items.push((item_name, count))
+                }
+            }
+
+            for (item, count) in items {
+                sb.push(match count > 1 {
+                    true => format!("- {count}x {item}"),
+                    false => format!("- {item}")
+                })
             }
         }
     }
@@ -523,70 +562,12 @@ pub async fn get_misc_info(pdr: &mut PlayerDataResponse) {
     pdr.set_resp(sb);
 }
 
-pub async fn get_inventory(pdr: &mut PlayerDataResponse) {
-    let mut sb = StringBuilder::new();
-    let storage = pdr.profile().storage();
-
-    let armor = storage.armor();
-    match armor.is_empty() {
-        true => sb.push("Armor: unavailable".to_owned()),
-        false => {
-            sb.push("Armor:".to_owned());
-            for piece in armor {
-                sb.push(format!("- {}", piece.name()));
-            }
-        }
-    }
-
-    let equipment = storage.equipment();
-    match equipment.is_empty() {
-        true => sb.push("Equipment: unavailable".to_owned()),
-        false => {
-            sb.push("Equipment:".to_owned());
-            for piece in equipment {
-                sb.push(format!("- {}", piece.name()));
-            }
-        }
-    }
-
-    sb.pushln();
-
-    let inventory = storage.inventory();
-    match inventory.is_empty() {
-        true => sb.push("Inventory: unavailable".to_owned()),
-        false => {
-            sb.push("Inventory:".to_owned());
-            let mut items: Vec<(&str, u64)> = Vec::new();
-
-            for item in inventory {
-                let &count = item.count();
-                let item_name = item.name();
-                match items.iter_mut().find(|(name, _)| *name == item_name) {
-                    Some((_, c)) => *c += count,
-                    None => items.push((item_name, count))
-                }
-            }
-
-            for (item, count) in items {
-                sb.push(match count > 1 {
-                    true => format!("- {count}x {item}"),
-                    false => format!("- {item}")
-                })
-            }
-        }
-    }
-
-    pdr.set_resp(sb);
-}
-
 pub async fn get_profile_networth(pdr: &mut PlayerDataResponse, detailed: bool) {
     let mut sb = StringBuilder::new();
     let mut total_value = 0;
-    let mut api_disabled = false;
 
     {
-        let mut profile = pdr.profile();
-        let storage = profile.storage();
+        let storage = pdr.profile().storage();
         let containers = vec![
             ("Inventory", storage.inventory().clone()),
             ("Enderchest", storage.ender_chest().clone()),
@@ -655,7 +636,7 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse, detailed: bool) 
         total_value += pets_value;
     }
 
-    api_disabled = total_value == 0;
+    let api_disabled = total_value == 0;
 
     let mut museum_value = 0;
     let player_uuid = pdr.player_uuid().to_string();
@@ -708,7 +689,7 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse, detailed: bool) 
 fn get_skill_level(data: &Value, skill: &str, xp: Option<u64>) -> (u64, String) {
     let xp = match xp {
         Some(xp) => xp,
-        None => match data.get_f64(&format!("player_data/experience/{skill}")) {
+        None => match data.get_f64(&format!("tools/experience/{skill}")) {
             Some(xp) => xp as u64,
             None => return (0, "unavailable".to_owned())
         }
@@ -728,13 +709,11 @@ fn get_skill_level(data: &Value, skill: &str, xp: Option<u64>) -> (u64, String) 
     };
 
     let max_level = *SKILL_MAX_LEVELS.get(skill).unwrap_or(&50);
-    let mut skill_cap = None;
     let mut cap_limit = max_level;
 
     if let Some(cap) = get_skill_cap {
         let cap = (50 + cap).min(max_level);
         if cap > 0 {
-            skill_cap = Some(cap);
             cap_limit = cap;
         }
     }

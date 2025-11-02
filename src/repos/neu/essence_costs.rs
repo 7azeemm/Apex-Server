@@ -2,47 +2,47 @@ use crate::extensions::json_ext::JsonExt;
 use crate::repos::neu::neu_repo::load_file;
 use rustc_hash::FxHashMap;
 use std::collections::HashMap;
+use std::io::Error;
 use std::sync::LazyLock;
+use getset::Getters;
 use tokio::sync::RwLock;
-use tokio::time::Instant;
 
 static ESSENCE_COSTS: LazyLock<RwLock<FxHashMap<String, ItemUpgradeCosts>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
 
-#[derive(Clone)]
+#[derive(Clone, Getters)]
+#[getset(get = "pub")]
 pub struct ItemUpgradeCosts {
-    pub essence_type: String,
-    pub stars: HashMap<u64, StarCost>,
-    pub dungeonize_cost: Option<u64>,
+    essence_type: String,
+    stars: HashMap<u64, StarCost>,
+    dungeonize_cost: Option<u64>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Getters)]
+#[getset(get = "pub")]
 pub struct StarCost {
-    pub essence: u64,
-    pub items: Vec<(String, u64)>,
+    essence: u64,
+    items: Vec<(String, u64)>,
 }
 
-pub async fn load_essence_costs() {
-    let start_time = Instant::now();
+pub async fn load_essence_costs() -> Result<(), Error> {
+    let json = load_file("constants/essencecosts.json").await?;
+    let items = json.as_object().ok_or("Json is not an object")?;
 
-    match load_file("constants/essencecosts.json").await {
-        Ok(serde_json::Value::Object(items)) => {
-            let mut essence_costs = ESSENCE_COSTS.write().await;
-            essence_costs.clear();
+    let mut map = FxHashMap::default();
 
-            for (id, data) in items {
-                if let Some(upgrade_costs) = get_upgrade_costs(data) {
-                    essence_costs.insert(id, upgrade_costs);
-                }
-            }
-
-            println!("[NEU-Repo] Loaded essence costs in {:.2?}", start_time.elapsed());
+    for (id, data) in items {
+        if let Some(upgrade_costs) = get_upgrade_costs(data) {
+            map.insert(id.to_owned(), upgrade_costs);
         }
-        Err(err) => println!("[NEU-Repo] Error occurred while loading essence costs: {:?}", err),
-        _ => println!("[NEU-Repo] Error occurred while loading essence costs: Invalid JSON format")
     }
+
+    let mut current_map = ESSENCE_COSTS.write().await;
+    *current_map = map;
+
+    Ok(())
 }
 
-fn get_upgrade_costs(map: serde_json::Value) -> Option<ItemUpgradeCosts> {
+fn get_upgrade_costs(map: &serde_json::Value) -> Option<ItemUpgradeCosts> {
     let essence_type = map.get_str("type")?.to_owned();
     let dungeonize_cost = map.get_u64("dungeonize");
     let items = map.get("items");

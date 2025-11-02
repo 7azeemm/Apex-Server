@@ -98,7 +98,7 @@ pub async fn get_player_profile(username: &str, player_uuid: &str, profile_name:
     }
 
     let mut player_profiles = PLAYER_PROFILES.write().await;
-    let mut player_data = player_profiles.entry(player_uuid.to_owned()).or_insert(PlayerData::default());
+    let player_data = player_profiles.entry(player_uuid.to_owned()).or_insert(PlayerData::default());
     player_data.update(info, selected_profile);
 
     if let Some(profile) = target_profile {
@@ -137,6 +137,7 @@ pub async fn get_museum_items<'a>(player_uuid: &str, profile: &'a mut PlayerProf
     let url = &format!("{MUSEUM_API_ENDPOINT}?key={}&profile={}", get_api_key(), profile.id());
     match send_http_request(url).await {
         Ok(value) => match value.get_bool("success").unwrap_or(false) {
+            false => eprintln!("Couldn't fetch museum data of profile {}", profile.id()),
             true => {
                 let undashed_player_uuid = player_uuid.replace("-", "");
                 if let Some(donations) = value.get_object(&format!("members/{undashed_player_uuid}/items")) {
@@ -147,7 +148,7 @@ pub async fn get_museum_items<'a>(player_uuid: &str, profile: &'a mut PlayerProf
                             items.extend(get_container_items(items_data, &format!("MUSEUM_{}", id)));
                         }
 
-                        let slot = data.get_str("featured_slot").unwrap_or("").to_owned();
+                        let slot = data.get_str("featured_slot").unwrap_or_default().to_owned();
                         let borrowing = data.get_bool("borrowing").unwrap_or(false);
                         let donation = MuseumDonation::new(id.to_owned(), slot, borrowing, items);
                         donations_list.push(donation);
@@ -155,7 +156,6 @@ pub async fn get_museum_items<'a>(player_uuid: &str, profile: &'a mut PlayerProf
                     profile.set_museum_data(donations_list);
                 }
             }
-            false => eprintln!("Couldn't fetch museum data of profile {}", profile.id())
         }
         Err(err) => eprintln!("Err: {:?}", err)
     };
@@ -410,8 +410,10 @@ fn scan_gear(sets: &[&[&str]], player_items: &HashMap<String, String>) -> [Optio
 
     for set in sets {
         for (slot_index, item_id) in set.iter().enumerate() {
-            if !item_id.is_empty() && found[slot_index].is_none() && let Some(item_name) = player_items.get(item_id.to_owned()) {
-                found[slot_index] = Some((item_id.to_string(), item_name.to_owned()));
+            if !item_id.is_empty() && found[slot_index].is_none() {
+                if let Some(item_name) = player_items.get(item_id.to_owned()) {
+                    found[slot_index] = Some((item_id.to_string(), item_name.to_owned()));
+                }
             }
         }
     }
@@ -421,11 +423,9 @@ fn scan_gear(sets: &[&[&str]], player_items: &HashMap<String, String>) -> [Optio
 
 fn organize_wardrobe_sets(wardrobe_items: Vec<Option<Item>>) -> Vec<[Option<Item>; 4]> {
     let mut pages = Vec::new();
-    let len = wardrobe_items.len();
-    let page_len = 36;
 
     // Split into two pages of 36 items each
-    for page_start in (0..len).step_by(page_len) {
+    for page_start in (0..wardrobe_items.len()).step_by(36) {
         // Each page has 9 sets
         for set_index in 0..9 {
             let mut armor_set: [Option<Item>; 4] = [None, None, None, None];
@@ -474,12 +474,13 @@ fn get_all_container_items(container: &Value, path: &str) -> Vec<Option<Item>> {
     if let Some(contents) = container.get_str("data") {
         if let Ok(items_data) = decode_items(contents, true) {
             for (slot, item) in items_data.iter().enumerate() {
-                if let Some(item) = item {
-                    if let Some(item) = get_item_obj(item.clone(), path, slot) {
-                        items.push(Some(item));
+                match item {
+                    None => items.push(None),
+                    Some(item) => {
+                        if let Some(item) = get_item_obj(item.clone(), path, slot) {
+                            items.push(Some(item));
+                        }
                     }
-                } else {
-                    items.push(None)
                 }
             }
         }

@@ -5,7 +5,6 @@ use rustc_hash::FxHashMap;
 use std::cmp::max;
 use std::sync::LazyLock;
 use std::time::Duration;
-use tokio::io::AsyncWriteExt;
 use tokio::sync::{Notify, RwLock};
 use tokio::time::{interval, interval_at, Instant};
 
@@ -70,10 +69,6 @@ async fn update() -> Result<u64, Box<dyn std::error::Error>> {
 
 pub async fn get_buy_price(id: &str) -> Option<u64> {
     BAZAAR.read().await.get(id).map(|p| *p.buy_price() as u64)
-}
-
-pub async fn get_buy_price_as_float(id: &str) -> Option<f64> {
-    BAZAAR.read().await.get(id).map(|p| *p.buy_price())
 }
 
 pub async fn get_sell_price(id: &str) -> Option<f64> {

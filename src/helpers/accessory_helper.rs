@@ -288,7 +288,7 @@ pub async fn get_missing_accessories(pdr: &mut PlayerDataResponse, page: u64, so
     pdr.set_resp(sb);
 }
 
-pub fn get_magical_power(talisman: &Talisman, with_recomb: bool) -> u64 {
+fn get_magical_power(talisman: &Talisman, with_recomb: bool) -> u64 {
     let rarity = match with_recomb {
         false => talisman.rarity.clone(),
         true => {
@@ -309,7 +309,7 @@ pub fn get_magical_power(talisman: &Talisman, with_recomb: bool) -> u64 {
     }
 }
 
-pub async fn get_accessory_price(id: &str) -> Option<u64> {
+async fn get_accessory_price(id: &str) -> Option<u64> {
     if id.contains("_TRAPPER_CREST") {
         return get_lowest_bin("TRAPPER_CREST").await;
     }

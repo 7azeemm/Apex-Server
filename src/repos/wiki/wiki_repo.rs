@@ -36,7 +36,7 @@ async fn process() {
     let mut dir_entries = match fs::read_dir(format!("{REPO_PATH}/pages")).await {
         Ok(entries) => entries,
         Err(e) => {
-            eprintln!("Failed to read directory {}: {}", REPO_PATH, e);
+            eprintln!("[WIKI-Repo] Failed to read directory {}: {}", REPO_PATH, e);
             return;
         }
     };
@@ -53,14 +53,14 @@ async fn process() {
         }
     }
 
-    println!("[Wiki-REPO] Processed all files in {:.2?}", start.elapsed());
+    println!("[Wiki-Repo] Processed all files in {:.2?}", start.elapsed());
 }
 
 async fn process_file(path: &Path) -> Option<(String, WikiPage)> {
     let content = match fs::read_to_string(path).await {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("[Wiki-REPO] Failed to read file {}: {}", path.display(), e);
+            eprintln!("[Wiki-Repo] Failed to read file {}: {}", path.display(), e);
             return None;
         }
     };
@@ -68,7 +68,7 @@ async fn process_file(path: &Path) -> Option<(String, WikiPage)> {
     let json: Value = match serde_json::from_str(&content) {
         Ok(j) => j,
         Err(e) => {
-            eprintln!("[Wiki-REPO] Failed to parse JSON from {}: {}", path.display(), e);
+            eprintln!("[Wiki-Repo] Failed to parse JSON from {}: {}", path.display(), e);
             return None;
         }
     };

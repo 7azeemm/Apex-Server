@@ -47,8 +47,7 @@ async fn update_contests() -> Result<(), Box<dyn Error>> {
         }).unwrap_or_default();
 
     let mut data = CONTESTS.write().await;
-    data.clear();
-    data.extend(contests);
+    *data = contests;
 
     Ok(())
 }

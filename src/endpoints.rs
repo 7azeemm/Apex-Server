@@ -1,6 +1,4 @@
 use crate::prices::auctions;
-use crate::prices::auctions::get_lowest_bin_and_id;
-use crate::prices::bazaar::get_buy_price_as_float;
 use crate::structs::auctions_structs::AuctionItemResponse;
 use axum::extract::Path;
 use axum::http::StatusCode;
@@ -32,42 +30,43 @@ pub struct AuctioneerAuctionItem {
 pub async fn get_price(axum::extract::Query(q): axum::extract::Query<PriceQuery>) -> Result<Json<PriceResp>, StatusCode> {
     let item_id = q.item_id.as_str();
 
-    let (price, auction_id, source) = match q.source.as_deref() {
-        Some("bazaar") => {
-            // Check only bazaar
-            match get_buy_price_as_float(item_id).await {
-                Some(bazaar_price) => (bazaar_price, None, "bazaar"),
-                None => return Err(StatusCode::NOT_FOUND),
-            }
-        }
-        Some("auction") => {
-            // Check only auction
-            match get_lowest_bin_and_id(item_id).await {
-                Some((auction_price, auction_id)) => (auction_price as f64, Some(auction_id), "auction"),
-                None => return Err(StatusCode::NOT_FOUND),
-            }
-        }
-        _ => {
-            // Default behavior: check both (bazaar first, then auction)
-            match get_buy_price_as_float(item_id).await {
-                Some(bazaar_price) => (bazaar_price, None, "bazaar"),
-                None => {
-                    match get_lowest_bin_and_id(item_id).await {
-                        Some((auction_price, auction_id)) => (auction_price as f64, Some(auction_id), "auction"),
-                        None => return Err(StatusCode::NOT_FOUND),
-                    }
-                }
-            }
-        }
-    };
-
-    Ok(Json(PriceResp {
-        item_id: q.item_id,
-        auction_id: auction_id.unwrap_or_else(|| "None".to_string()),
-        price,
-        source: source.to_string(),
-        timestamp: chrono::Utc::now().timestamp_millis() as u64,
-    }))
+    // let (price, auction_id, source) = match q.source.as_deref() {
+    //     Some("bazaar") => {
+    //         // Check only bazaar
+    //         match get_buy_price_as_float(item_id).await {
+    //             Some(bazaar_price) => (bazaar_price, None, "bazaar"),
+    //             None => return Err(StatusCode::NOT_FOUND),
+    //         }
+    //     }
+    //     Some("auction") => {
+    //         // Check only auction
+    //         match get_lowest_bin_and_id(item_id).await {
+    //             Some((auction_price, auction_id)) => (auction_price as f64, Some(auction_id), "auction"),
+    //             None => return Err(StatusCode::NOT_FOUND),
+    //         }
+    //     }
+    //     _ => {
+    //         // Default behavior: check both (bazaar first, then auction)
+    //         match get_buy_price_as_float(item_id).await {
+    //             Some(bazaar_price) => (bazaar_price, None, "bazaar"),
+    //             None => {
+    //                 match get_lowest_bin_and_id(item_id).await {
+    //                     Some((auction_price, auction_id)) => (auction_price as f64, Some(auction_id), "auction"),
+    //                     None => return Err(StatusCode::NOT_FOUND),
+    //                 }
+    //             }
+    //         }
+    //     }
+    // };
+    //
+    // Ok(Json(PriceResp {
+    //     item_id: q.item_id,
+    //     auction_id: auction_id.unwrap_or_else(|| "None".to_string()),
+    //     price,
+    //     source: source.to_string(),
+    //     timestamp: chrono::Utc::now().timestamp_millis() as u64,
+    // }))
+    Err(StatusCode::NOT_FOUND)
 }
 
 pub async fn get_auction_by_auction_id(Path(auction_id): Path<String>) -> Result<Json<AuctionItemResponse>, StatusCode> {

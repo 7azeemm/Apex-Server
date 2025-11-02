@@ -13,7 +13,7 @@ static WIKI_SEARCHER: LazyLock<RwLock<Arc<WikiSearcher>>> = LazyLock::new(|| {
 
 pub fn update_index(pages: Vec<WikiPage>) {
     match WikiSearcher::new(pages) {
-        Err(e) => println!("Error while building wiki index, {:?}", e),
+        Err(e) => println!("[WIKI-Repo] Error while building wiki index, {:?}", e),
         Ok(searcher) => {
             if let Ok(mut writer) = WIKI_SEARCHER.write() {
                 *writer = Arc::new(searcher);

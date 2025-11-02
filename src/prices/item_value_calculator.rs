@@ -500,8 +500,8 @@ impl ModifierHandler for UpgradeLevelModifier {
         let Some(level) = attr.as_u64() else { return };
         let Some(item_upgrade_costs) = get_essence_costs(ctx.item_id()).await else { return };
 
-        let max_stars = item_upgrade_costs.stars.len() as u64;
-        let essence_id = format!("ESSENCE_{}", item_upgrade_costs.essence_type.to_uppercase());
+        let max_stars = item_upgrade_costs.stars().len() as u64;
+        let essence_id = format!("ESSENCE_{}", item_upgrade_costs.essence_type().to_uppercase());
 
         let regular_stars = min(max_stars, level);
         let master_stars = level.saturating_sub(max_stars);
@@ -509,23 +509,24 @@ impl ModifierHandler for UpgradeLevelModifier {
         let mut essence_amount = 0;
         let mut items_cost: HashMap<&str, u64> = HashMap::new();
 
-        for (count, star) in item_upgrade_costs.stars.iter() {
-            if *count <= regular_stars {
-                essence_amount += star.essence;
-                for (item, amount) in star.items.iter() {
-                    *items_cost.entry(item).or_insert(0) += amount;
+        for (&count, star) in item_upgrade_costs.stars() {
+            if count <= regular_stars {
+                essence_amount += *star.essence();
+                for (item, amount) in star.items() {
+                    *items_cost.entry(item).or_insert(0) += *amount;
                 }
             }
         }
 
-        if let Some(dungeonize_cost) = item_upgrade_costs.dungeonize_cost {
+        if let Some(dungeonize_cost) = item_upgrade_costs.dungeonize_cost() {
             if ctx.item_nbt().get_extra_map().and_then(|m| m.get("dungeon_item")).is_some() {
                 essence_amount += dungeonize_cost;
             }
         }
 
-        let mut stars_cost = 0;
         items_cost.insert(&essence_id, essence_amount);
+
+        let mut stars_cost = 0;
         for (item, count) in items_cost {
             stars_cost += get_buy_price(item).await.unwrap_or(0) * count;
         }
@@ -553,7 +554,7 @@ impl ModifierHandler for PetModifier {
 
         let pet_data: serde_json::Value = match serde_json::from_str(pet_info) {
             Ok(data) => data,
-            Err(_) => return,
+            Err(_) => return
         };
 
         if let Some(pet) = get_pet_obj(&pet_data) {
@@ -604,6 +605,7 @@ pub async fn get_pet_networth(pet: &Pet) -> u64 {
             None => get_lowest_bin(&skin_id).await.unwrap_or(0),
             Some(price) => price
         };
+
         return pet_value;
     }
 

@@ -30,12 +30,6 @@ pub const TROPHY_FISHING_TIERS: &[&str] = &[
     "Master Trophy Fisher (Caught all Diamond Trophy Fishes)"
 ];
 
-pub const TROPHY_FISHES: &[&str] = &[
-    "sulphur_skitter", "blobfish", "obfuscated_fish_1", "steaming_hot_flounder",
-    "gusher", "obfuscated_fish_2", "slugfish", "flyfish", "obfuscated_fish_3", "vanille", "lava_horse", "mana_ray",
-    "volcanic_stonefish", "skeleton_fish", "moldfin", "soul_fish", "karate_fish", "golden_fish"
-];
-
 pub const SLAYER_XP_REQUIRED: Map<&'static str, &[u64]> = phf_map! {
     "zombie" => &[0, 5, 15, 200, 1000, 5000, 20000, 100000, 400000, 1000000],
     "spider" => &[0, 10, 25, 200, 1000, 5000, 20000, 100000, 400000, 1000000],

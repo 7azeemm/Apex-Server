@@ -9,6 +9,7 @@ use tokio::sync::RwLock;
 const NAME_TO_UUID_URL: &str = "https://api.mojang.com/users/profiles/minecraft";
 const NAME_TO_UUID_URL_FALLBACK: &str = "https://playerdb.co/api/player/minecraft";
 const UUID_TO_NAME_URL: &str = "https://api.minecraftservices.com/minecraft/profile/lookup";
+
 static UUID_CACHE: Lazy<RwLock<HashMap<String, String>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 static NAME_CACHE: Lazy<RwLock<HashMap<String, String>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 
@@ -61,10 +62,8 @@ pub async fn get_player_username(player_uuid: &str) -> Result<String, Box<dyn Er
     let json = send_http_request(&url).await?;
 
     if let Some(username) = json.get_str("name") {
-        {
-            let mut cache = NAME_CACHE.write().await;
-            cache.insert(player_uuid.to_owned(), username.to_owned());
-        }
+        let mut cache = NAME_CACHE.write().await;
+        cache.insert(player_uuid.to_owned(), username.to_owned());
         return Ok(username.to_owned());
     }
 

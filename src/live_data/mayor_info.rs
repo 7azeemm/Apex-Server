@@ -109,8 +109,7 @@ pub async fn get_mayor_info() -> MayorInfo {
 }
 
 pub fn get_skyblock_date() -> String {
-    let now = Utc::now();
-    let sb_date = get_sb_time(now);
+    let sb_date = get_sb_time();
 
     format!("Year {} Month {} Day {} {:02}:{:02}:{:02}",
             sb_date.get_year(), sb_date.get_month(), sb_date.get_day(),
@@ -118,8 +117,7 @@ pub fn get_skyblock_date() -> String {
 }
 
 pub fn get_election_over_time_left() -> String {
-    let now = Utc::now();
-    let sb_time = get_sb_time(now);
+    let sb_time = get_sb_time();
     let mut sb_year = sb_time.get_year();
     if (sb_time.get_month(), sb_time.get_day(), sb_time.get_hour()) >= (3, 27, 12) {
         sb_year += 1;
@@ -127,7 +125,7 @@ pub fn get_election_over_time_left() -> String {
 
     let election_time = get_election_time(sb_year);
 
-    let duration = chrono::Duration::seconds(election_time - now.timestamp());
+    let duration = chrono::Duration::seconds(election_time - Utc::now().timestamp());
     format!(
         "Election Over in {}d {}h {}m {}s",
         duration.num_days(),
@@ -138,25 +136,21 @@ pub fn get_election_over_time_left() -> String {
 }
 
 pub fn get_special_mayors_info() -> String {
-    let now = Utc::now();
-    let sb_date = get_sb_time(now);
+    let sb_date = get_sb_time();
     let sb_year = sb_date.get_year();
 
     let mut infos: Vec<(i64, String)> = ["Derpy", "Jerry", "Scorpius"]
         .iter()
         .enumerate()
         .map(|(idx, name)| {
-            let (year, dur) = next_special_mayor(now, sb_year, idx as i64);
+            let (year, dur) = next_special_mayor(Utc::now(), sb_year, idx as i64);
             let (d, h, m, s) = (
                 dur.num_days(),
                 dur.num_hours() % 24,
                 dur.num_minutes() % 60,
                 dur.num_seconds() % 60,
             );
-            (
-                year,
-                format!("- Next {name} -> Year {year} in ~{d}d {h}h {m}m {s}s"),
-            )
+            (year, format!("- Next {name} -> Year {year} in ~{d}d {h}h {m}m {s}s"))
         })
         .collect();
 
@@ -174,7 +168,8 @@ fn next_special_mayor_year(current: i64, mayor_index: i64) -> i64 {
     k * 8
 }
 
-fn get_sb_time(now: DateTime<Utc>) -> SBDate {
+fn get_sb_time() -> SBDate {
+    let now = Utc::now();
     let elapsed = now.timestamp() - SB_START_TIMESTAMP;
 
     let sb_years = elapsed / (REAL_HOURS_PER_SB_YEAR * 3600);

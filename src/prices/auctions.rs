@@ -199,7 +199,7 @@ async fn calculate_base_prices() {
             calc_auction_value(&mut auction).await;
             let modifiers_value = auction.value().modifiers_value();
 
-            if let Some(mut lowest_bin_item) = AUCTION_MANAGER.lowest_bins.write().await.get_mut(&auction_id) {
+            if let Some(lowest_bin_item) = AUCTION_MANAGER.lowest_bins.write().await.get_mut(&auction_id) {
                 lowest_bin_item.set_base_price(price - modifiers_value);
             }
         }

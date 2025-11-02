@@ -1,5 +1,5 @@
 use crate::constants::setups::SetupType;
-use crate::player_data::profile_fetcher::get_player_profile;
+use crate::tools::profile_fetcher::get_player_profile;
 use crate::structs::item_structs::ItemNbt;
 use crate::utils::get_player_uuid;
 use derive_new::new;

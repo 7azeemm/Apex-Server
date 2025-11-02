@@ -1,3 +1,4 @@
+use std::error::Error;
 use crate::repos::neu::essence_costs::load_essence_costs;
 use crate::repos::neu::gemstone_slots_cost::load_gemstone_slot_costs;
 use crate::repos::neu::items::{load_accessories, load_items};
@@ -5,11 +6,12 @@ use crate::repos::neu::talisman_upgrades::load_talisman_upgrades;
 use crate::repos::repo_manager;
 use crate::structs::repo_structs::Repo;
 use serde_json::Value;
-use std::error::Error;
+use std::pin::Pin;
+use std::time::Instant;
 use crate::repos::neu::museum_donations::load_museum_donations;
 use crate::repos::neu::reforge_stones::load_reforge_stones;
 
-const REPO_PATH: &str = "neu_repo";
+pub const REPO_PATH: &str = "neu_repo";
 const REPO_URL: &str = "https://github.com/NotEnoughUpdates/NotEnoughUpdates-REPO.git";
 
 pub async fn schedule() {
@@ -21,15 +23,24 @@ pub async fn schedule() {
         threshold: 3600,
     };
 
-    //TODO: error handling should be moved here
     repo.schedule(|| async {
-        load_items(&format!("{REPO_PATH}/items")).await;
-        load_accessories().await;
-        load_gemstone_slot_costs().await;
-        load_essence_costs().await;
-        load_talisman_upgrades().await;
-        load_reforge_stones().await;
-        load_museum_donations().await;
+        let loaders: Vec<(&str, Pin<Box<dyn Future<Output = Result<Option<usize>, std::io::Error>> + Send>>)> = vec![
+            ("Items", Box::pin(load_items())),
+            ("Accessories", Box::pin(load_accessories())),
+            ("Gemstone-Slot-Costs", Box::pin(load_gemstone_slot_costs())),
+            ("Essence-Costs", Box::pin(load_essence_costs())),
+            ("Talisman-Upgrades", Box::pin(load_talisman_upgrades())),
+            ("Reforge-Stones", Box::pin(load_reforge_stones())),
+            ("Museum-Donations", Box::pin(load_museum_donations()))
+        ];
+
+        for (name, func) in loaders {
+            let start_time = Instant::now();
+            match func.await {
+                Ok(()) => println!("[NEU/{name}] Loaded in {:.2?}", start_time.elapsed()),
+                Err(err) => eprintln!("[NEU/{name}] Failed to load, err: {err}")
+            }
+        }
     }).await;
 }
 

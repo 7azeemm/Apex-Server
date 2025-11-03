@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::io::Error;
+use std::error::Error;
 use std::sync::LazyLock;
 use rustc_hash::FxHashMap;
 use tokio::sync::RwLock;
@@ -14,7 +14,7 @@ pub struct ReforgeStone {
     pub apply_cost: HashMap<String, u64>
 }
 
-pub async fn load_reforge_stones() -> Result<(), Error> {
+pub async fn load_reforge_stones() -> Result<(), Box<dyn Error + Send + Sync>> {
     let json = load_file("constants/reforgestones.json").await?;
     let items = json.as_object().ok_or("Json is not an object")?;
 

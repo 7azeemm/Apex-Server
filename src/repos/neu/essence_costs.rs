@@ -2,7 +2,7 @@ use crate::extensions::json_ext::JsonExt;
 use crate::repos::neu::neu_repo::load_file;
 use rustc_hash::FxHashMap;
 use std::collections::HashMap;
-use std::io::Error;
+use std::error::Error;
 use std::sync::LazyLock;
 use getset::Getters;
 use tokio::sync::RwLock;
@@ -24,7 +24,7 @@ pub struct StarCost {
     items: Vec<(String, u64)>,
 }
 
-pub async fn load_essence_costs() -> Result<(), Error> {
+pub async fn load_essence_costs() -> Result<(), Box<dyn Error + Send + Sync>> {
     let json = load_file("constants/essencecosts.json").await?;
     let items = json.as_object().ok_or("Json is not an object")?;
 

@@ -24,7 +24,7 @@ pub async fn schedule() {
     };
 
     repo.schedule(|| async {
-        let loaders: Vec<(&str, Pin<Box<dyn Future<Output = Result<Option<usize>, std::io::Error>> + Send>>)> = vec![
+        let loaders: Vec<(&str, Pin<Box<dyn Future<Output = Result<(), Box<dyn Error + Send + Sync>>> + Send>>)> = vec![
             ("Items", Box::pin(load_items())),
             ("Accessories", Box::pin(load_accessories())),
             ("Gemstone-Slot-Costs", Box::pin(load_gemstone_slot_costs())),

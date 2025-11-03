@@ -1,4 +1,4 @@
-use std::io::Error;
+use std::error::Error;
 use crate::repos::neu::neu_repo::load_file;
 use rustc_hash::FxHashMap;
 use std::sync::LazyLock;
@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 
 static GEMSTONE_SLOT_COSTS: LazyLock<RwLock<FxHashMap<String, FxHashMap<String, Vec<String>>>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
 
-pub async fn load_gemstone_slot_costs() -> Result<(), Error> {
+pub async fn load_gemstone_slot_costs() -> Result<(), Box<dyn Error + Send + Sync>> {
     let json = load_file("constants/gemstonecosts.json").await?;
     let items = json.as_object().ok_or("Json is not an object")?;
 

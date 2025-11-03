@@ -1,10 +1,10 @@
+use std::error::Error;
 use crate::constants::misc::RARITIES;
 use crate::extensions::json_ext::JsonExt;
 use crate::item_utils::strip_formatting;
 use rustc_hash::FxHashMap;
 use serde_json::Value;
 use std::fs;
-use std::io::Error;
 use std::sync::LazyLock;
 use tokio::sync::RwLock;
 use crate::repos::neu::neu_repo::REPO_PATH;
@@ -13,7 +13,7 @@ const ACCESSORY_RARITIES: [&str; 3] = ["ACCESSORY", "HATCESSORY", "DUNGEON ACCES
 static ITEMS: LazyLock<RwLock<FxHashMap<String, Value>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
 pub static ACCESSORIES: LazyLock<RwLock<FxHashMap<String, String>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
 
-pub async fn load_items() -> Result<(), Error> {
+pub async fn load_items() -> Result<(), Box<dyn Error + Send + Sync>> {
     let entries = fs::read_dir(&format!("{REPO_PATH}/items"))?;
 
     let mut map = FxHashMap::default();
@@ -36,7 +36,7 @@ pub async fn load_items() -> Result<(), Error> {
     Ok(())
 }
 
-pub async fn load_accessories() -> Result<(), Error> {
+pub async fn load_accessories() -> Result<(), Box<dyn Error + Send + Sync>> {
     let mut accessories = FxHashMap::default();
 
     let items = ITEMS.read().await;

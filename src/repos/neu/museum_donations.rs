@@ -1,5 +1,5 @@
 use std::collections::{HashMap, HashSet};
-use std::io::Error;
+use std::error::Error;
 use std::sync::LazyLock;
 use derive_new::new;
 use getset::Getters;
@@ -24,7 +24,7 @@ impl Donation {
     pub fn is_set(&self) -> bool { self.set.is_some() }
 }
 
-pub async fn load_museum_donations() -> Result<(), Error> {
+pub async fn load_museum_donations() -> Result<(), Box<dyn Error + Send + Sync>> {
     let json = load_file("constants/museum.json").await?;
     let items = json.as_object().ok_or("Json is not an object")?;
 

@@ -1,13 +1,13 @@
 use crate::repos::neu::neu_repo::load_file;
 use std::collections::{HashMap, HashSet};
-use std::io::Error;
+use std::error::Error;
 use std::sync::LazyLock;
 use tokio::sync::RwLock;
 
 static TALISMAN_UPGRADES: LazyLock<RwLock<Vec<Vec<String>>>> = LazyLock::new(|| RwLock::new(Vec::default()));
 pub static IGNORED_TALISMANS: LazyLock<RwLock<HashSet<String>>> = LazyLock::new(|| RwLock::new(HashSet::default()));
 
-pub async fn load_talisman_upgrades() -> Result<(), Error> {
+pub async fn load_talisman_upgrades() -> Result<(), Box<dyn Error + Send + Sync>> {
     let json = load_file("constants/misc.json").await?;
     let items = json.as_object().ok_or("Json is not an object")?;
 

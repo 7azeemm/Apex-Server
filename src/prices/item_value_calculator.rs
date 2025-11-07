@@ -1,11 +1,13 @@
 use crate::constants::enchantments::{NPC_ENCHANTS, STACKING_ENCHANTS, TIER_FIVE_ENCHANTS, TIER_ONE_ENCHANTS, TIER_THREE_ENCHANTS, UPGRADABLE_ENCHANTS};
-use crate::constants::misc::{GEMSTONES, MASTER_STARS};
+use crate::constants::misc::{GEMSTONES, MASTER_STARS, STARRED_ITEMS_INGREDIENT};
 use crate::extensions::fastnbt_ext::ValueExt;
 use crate::item_utils::{get_item_name, get_item_rarity, get_pet_info, get_pet_level, get_pet_obj, get_pretty_name};
 use crate::prices::auctions::{get_base_price, get_lowest_bin};
 use crate::prices::bazaar::get_buy_price;
+use crate::prices::cosmetic_prices::get_cosmetic_price;
 use crate::repos::neu::essence_costs::get_essence_costs;
 use crate::repos::neu::gemstone_slots_cost::get_item_gemstone_slots;
+use crate::repos::neu::reforge_stones::get_reforge_stone;
 use crate::structs::item_structs::{ItemNbt, ItemValue, ModifierContext};
 use crate::structs::player_data_structs::Pet;
 use crate::structs::value_calc_structs::{CountedItemModifier, ModifierHandler, SingleItemModifier};
@@ -16,8 +18,6 @@ use once_cell::sync::Lazy;
 use std::cmp::min;
 use std::collections::HashMap;
 use std::ops::Add;
-use crate::prices::cosmetic_prices::get_cosmetic_price;
-use crate::repos::neu::reforge_stones::get_reforge_stone;
 
 const POTATO_BOOK_ID: &str = "HOT_POTATO_BOOK";
 const FUMING_BOOK_ID: &str = "FUMING_POTATO_BOOK";
@@ -74,8 +74,8 @@ static MODIFIERS: Lazy<Vec<(&'static str, Box<dyn ModifierHandler>)>> = Lazy::ne
     ]
 });
 
-pub async fn calculate_item_value(item_id: &str, item_nbt: &ItemNbt, include_prices: bool) -> ItemValue {
-    let mut item_value = ItemValue::new(include_prices);
+pub async fn calculate_item_value(item_id: &str, item_nbt: &ItemNbt, include_prices: bool, include_cosmetics: bool) -> ItemValue {
+    let mut item_value = ItemValue::new(include_prices, include_cosmetics);
     let Some(attributes) = item_nbt.get_extra_map() else { return item_value };
     let ctx = ModifierContext::new(item_id, item_nbt);
 
@@ -96,6 +96,15 @@ pub async fn calculate_item_value(item_id: &str, item_nbt: &ItemNbt, include_pri
     };
 
     item_value.set_base_value(price * item_nbt.count());
+
+    if let Some(Value::String(raw_id)) = attributes.get("id") {
+        if raw_id.contains("STARRED_") {
+            if let Some(ingredient) = STARRED_ITEMS_INGREDIENT.get(raw_id) {
+                let price = get_buy_price(ingredient).await;
+                item_value.add("Starred: Yes", price, 8);
+            }
+        }
+    }
 
     for (attr, handler) in MODIFIERS.iter() {
         if attributes.contains_key(*attr) {
@@ -488,7 +497,8 @@ impl ModifierHandler for DyeModifier {
     async fn calculate_value(&self, _ctx: &ModifierContext<'_>, attr: &Value, value: &mut ItemValue) {
         let Some(dye) = attr.as_str() else { return };
         let price = get_lowest_bin(dye).await;
-        value.add(&format!("Dye: {}", &get_pretty_name(&*dye.replace("DYE_", ""))), price, 1);
+        let dye_name = dye.replace("DYE_", "");
+        value.add_cosmetic(&format!("Dye: {}", get_pretty_name(&dye_name)), price);
     }
 }
 
@@ -565,6 +575,8 @@ impl ModifierHandler for PetModifier {
 
 pub async fn get_pet_value(pet: &Pet, value: &mut ItemValue) {
     if let Some(pet_info) = get_pet_info(&pet) {
+        value.set_base_value(0);
+
         let price = get_pet_networth(&pet).await;
         match pet.skin() {
             Some(skin) => value.add(&format!("Pet: {pet_info}, Skin: {}", get_pretty_name(skin)), Some(price), 1),

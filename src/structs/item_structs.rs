@@ -1,10 +1,10 @@
 use crate::extensions::fastnbt_ext::ValueExt;
+use crate::utils::format_number;
 use derive_new::new;
 use fastnbt::Value;
 use getset::Getters;
 use serde::Deserialize;
 use std::collections::HashMap;
-use crate::utils::format_number;
 
 #[derive(Default, Debug, Deserialize, Clone)]
 pub struct ItemNbt {
@@ -36,12 +36,13 @@ pub struct ItemValue {
     modifiers_value: u64,
     base_value: u64,
     value: u64,
-    include_prices: bool
+    include_prices: bool,
+    include_cosmetics: bool
 }
 
 impl ItemValue {
-    pub fn new(include_prices: bool) -> Self {
-        Self { info: Vec::default(), modifiers_value: 0, base_value: 0, value: 0, include_prices }
+    pub fn new(include_prices: bool, include_cosmetics: bool) -> Self {
+        Self { info: Vec::default(), modifiers_value: 0, base_value: 0, value: 0, include_prices, include_cosmetics }
     }
 
     pub fn add(&mut self, line: &str, price: Option<u64>, count: u64) {
@@ -52,6 +53,19 @@ impl ItemValue {
             true => format!("{line} ({} coins)", format_number(value)),
             false => line.to_owned()
         });
+    }
+
+    pub fn add_cosmetic(&mut self, line: &str, price: Option<u64>) {
+        match self.include_cosmetics {
+            true => self.add(line, price, 1),
+            false => {
+                let value = price.unwrap_or(0);
+                self.info.push(match self.include_prices && price.is_some() {
+                    true => format!("{line} ({} coins) (Cosmetic, not included in the value estimation!)", format_number(value)),
+                    false => line.to_owned()
+                });
+            }
+        }
     }
 
     pub fn add_line(&mut self, line: &str) {

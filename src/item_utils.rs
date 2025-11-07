@@ -1,4 +1,4 @@
-use crate::constants::misc::RARITIES;
+use crate::constants::misc::{RARITIES, STARRED_ITEMS_INGREDIENT};
 use crate::constants::pets::{PET_LEVELS_XP, RARITY_OFFSETS};
 use crate::extensions::fastnbt_ext::ValueExt;
 use crate::extensions::json_ext::JsonExt;
@@ -10,6 +10,7 @@ use base64::Engine;
 use fastnbt::{from_reader, from_value, Value};
 use flate2::read::GzDecoder;
 use std::cmp::min;
+use std::collections::HashMap;
 use std::error::Error;
 use std::io::Cursor;
 
@@ -28,20 +29,20 @@ pub fn get_pretty_name(text: &str) -> String {
         .join(" ")
 }
 
+pub fn is_pet(item_nbt: &ItemNbt) -> bool {
+    if let Some(id) = item_nbt.get_extra_map().and_then(|m| m.get("id")).and_then(|v| v.as_str()) {
+        return id == "PET"
+    }
+
+    false
+}
+
 pub fn get_item_id(item_nbt: &ItemNbt) -> Option<String> {
     let extra_map = item_nbt.get_extra_map()?;
 
     let id = extra_map.get("id")?.as_str()?;
     match id {
-        "PET" => {
-            let pet_info_str = extra_map.get("petInfo")?.as_str()?;
-            let pet_info: serde_json::Value = serde_json::from_str(pet_info_str).ok()?;
-
-            let pet_type = pet_info.get("type")?.as_str()?;
-            let pet_tier = pet_info.get("tier")?.as_str()?;
-
-            Some(format!("{}_{}", pet_tier, pet_type))
-        }
+        "PET" => Some(get_pet_id(extra_map)?),
         "POTION" => {
             let potion_name = extra_map.get("potion")?.as_str()?;
             let potion_level = extra_map.get("potion_level")?.as_u64()?;
@@ -53,8 +54,23 @@ pub fn get_item_id(item_nbt: &ItemNbt) -> Option<String> {
             let rune_level = rune_level.as_u64()?;
             Some(format!("{}_RUNE_{}", rune_type.to_uppercase(), rune_level))
         }
-        _ => Some(id.to_string()),
+        _ => {
+            Some(match STARRED_ITEMS_INGREDIENT.contains_key(id) {
+                true => id.replace("STARRED_", "").to_owned(),
+                false => id.to_owned()
+            })
+        }
     }
+}
+
+pub fn get_pet_id(extra_map: &HashMap<String, Value>) -> Option<String> {
+    let pet_info_str = extra_map.get("petInfo")?.as_str()?;
+    let pet_info: serde_json::Value = serde_json::from_str(pet_info_str).ok()?;
+
+    let pet_type = pet_info.get("type")?.as_str()?;
+    let pet_tier = pet_info.get("tier")?.as_str()?;
+
+    Some(format!("{}_{}", pet_tier, pet_type))
 }
 
 pub fn get_item_name(item_nbt: &ItemNbt) -> Option<String> {

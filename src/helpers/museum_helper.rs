@@ -1,10 +1,10 @@
-use std::collections::{HashMap, HashSet};
 use crate::item_utils::get_pretty_name;
-use crate::tools::profile_fetcher::get_museum_items;
 use crate::prices::auctions::get_lowest_bin;
 use crate::repos::neu::museum_donations::{Donation, DONATIONS, SET_EXCEPTIONS, UPGRADES};
 use crate::structs::player_data_structs::{PlayerDataResponse, StringBuilder};
+use crate::tools::profile_fetcher::get_museum_items;
 use crate::utils::format_number;
+use std::collections::{HashMap, HashSet};
 
 const ITEMS_PER_PAGE: usize = 15;
 
@@ -42,7 +42,7 @@ pub async fn get_missing_museum_donations(pdr: &mut PlayerDataResponse, page: u6
         if donated_items.contains(id) { continue }
 
         if let Some(line) = item_to_line.get(id) {
-            let pos = line.iter().position(|x| x == id).unwrap();
+            let pos = line.iter().position(|x| x == id).unwrap_or_default();
             let has_better = (0..pos).any(|i| donated_items.contains(&line[i]));
             if has_better { continue }
         }
@@ -86,7 +86,7 @@ pub async fn get_missing_museum_donations(pdr: &mut PlayerDataResponse, page: u6
 
     // Sort by coins per XP
     missing_with_prices.sort_by(|a, b| {
-        a.coins_per_xp.unwrap().partial_cmp(&b.coins_per_xp.unwrap()).unwrap()
+        a.coins_per_xp.unwrap().partial_cmp(&b.coins_per_xp.unwrap()).unwrap_or(std::cmp::Ordering::Equal)
     });
 
     // Sort no_price_donations by XP descending
@@ -134,5 +134,5 @@ pub async fn get_missing_museum_donations(pdr: &mut PlayerDataResponse, page: u6
         sb.push("- Donations are sorted by lowest coins per XP (most efficient first).".to_string());
     }
 
-    pdr.set_resp(sb);
+    pdr.set_sb(sb);
 }

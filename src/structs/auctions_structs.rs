@@ -4,6 +4,7 @@ use getset::Getters;
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::fmt::{Display, Formatter};
 use tokio::sync::RwLock;
 
 pub struct AuctionManager {
@@ -56,6 +57,7 @@ pub struct Auction {
 #[derive(Clone, Getters)]
 #[getset(get = "pub")]
 pub struct AuctionItem {
+    auction_id: String,
     auctioneer: String,
     item_name: String,
     item_id: String,
@@ -65,8 +67,9 @@ pub struct AuctionItem {
 }
 
 impl AuctionItem {
-    pub fn new(auction: &Auction, item_id: String, item_nbt: ItemNbt) -> Self {
+    pub fn new(id: String, auction: &Auction, item_id: String, item_nbt: ItemNbt) -> Self {
         Self {
+            auction_id: id,
             auctioneer: auction.auctioneer.clone(),
             item_name: auction.item_name.clone(),
             value: ItemValue::default(),
@@ -91,6 +94,25 @@ pub struct LowestBinItem {
 impl LowestBinItem {
     pub fn set_base_price(&mut self, base_price: u64) {
         self.base_price = base_price;
+    }
+}
+
+#[derive(Clone)]
+pub enum Budget {
+    Low,
+    Medium,
+    High,
+    NoLimit,
+}
+
+impl Display for Budget {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Budget::Low => write!(f, "Low"),
+            Budget::Medium => write!(f, "Medium"),
+            Budget::High => write!(f, "High"),
+            Budget::NoLimit => write!(f, "NoLimit"),
+        }
     }
 }
 

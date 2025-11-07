@@ -1,15 +1,15 @@
-use std::error::Error;
 use crate::repos::neu::essence_costs::load_essence_costs;
 use crate::repos::neu::gemstone_slots_cost::load_gemstone_slot_costs;
 use crate::repos::neu::items::{load_accessories, load_items};
+use crate::repos::neu::museum_donations::load_museum_donations;
+use crate::repos::neu::reforge_stones::load_reforge_stones;
 use crate::repos::neu::talisman_upgrades::load_talisman_upgrades;
 use crate::repos::repo_manager;
 use crate::structs::repo_structs::Repo;
 use serde_json::Value;
+use std::error::Error;
 use std::pin::Pin;
 use std::time::Instant;
-use crate::repos::neu::museum_donations::load_museum_donations;
-use crate::repos::neu::reforge_stones::load_reforge_stones;
 
 pub const REPO_PATH: &str = "neu_repo";
 const REPO_URL: &str = "https://github.com/NotEnoughUpdates/NotEnoughUpdates-REPO.git";
@@ -37,8 +37,8 @@ pub async fn schedule() {
         for (name, func) in loaders {
             let start_time = Instant::now();
             match func.await {
-                Ok(()) => println!("[NEU/{name}] Loaded in {:.2?}", start_time.elapsed()),
-                Err(err) => eprintln!("[NEU/{name}] Failed to load, err: {err}")
+                Ok(()) => println!("[NEU-Repo/{name}] Loaded in {:.2?}", start_time.elapsed()),
+                Err(err) => eprintln!("[NEU-Repo/{name}] Failed to load, err: {err}")
             }
         }
     }).await;

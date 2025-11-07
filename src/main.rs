@@ -1,6 +1,6 @@
 #![allow(warnings)]
 mod constants;
-pub mod item_utils;
+mod item_utils;
 mod repos;
 mod endpoints;
 mod tools;
@@ -14,9 +14,11 @@ mod helpers;
 
 use crate::endpoints::{get_auction_by_auction_id, get_auctions_by_auctioneer, get_price};
 use crate::live_data::{jacob_contests, mayor_info};
-use crate::tools::profile_fetcher::profile_cleaner;
+use crate::prices::auctions::{search_in_auction_house, Budget};
 use crate::prices::{auctions, bazaar, cosmetic_prices};
 use crate::repos::repo_manager;
+use crate::structs::player_data_structs::StringBuilder;
+use crate::tools::profile_fetcher::profile_cleaner;
 use axum::routing::get;
 use axum::Router;
 use dotenv::dotenv;
@@ -37,6 +39,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
     cosmetic_prices::schedule().await;
     auctions::schedule().await;
     profile_cleaner();
+
+    let mut sb = StringBuilder::new();
+
+    for budget in vec![Budget::Low, Budget::Medium, Budget::High, Budget::NoLimit] {
+        search_in_auction_house(&mut sb, "Strong Dragon Chestplate", false, budget.clone()).await;
+        search_in_auction_house(&mut sb, "Necron's chestplate", false, budget.clone()).await;
+        search_in_auction_house(&mut sb, "Giant's sword", false, budget.clone()).await;
+        search_in_auction_house(&mut sb, "Shadow assassin boots", false, budget.clone()).await;
+        search_in_auction_house(&mut sb, "Livid dagger", false, budget.clone()).await;
+        search_in_auction_house(&mut sb, "Shadow fury", false, budget.clone()).await;
+        search_in_auction_house(&mut sb, "Glacial scythe", true, budget.clone()).await;
+        search_in_auction_house(&mut sb, "Bonzo mask", false, budget.clone()).await;
+    }
+
+    println!("{}", sb.get_response());
 
     app().await;
     signal::ctrl_c().await?;

@@ -1,4 +1,3 @@
-use std::cmp::max;
 use crate::constants::garden::{CANE_CACTUS_MILESTONE_XP, CARROT_POTATO_MILESTONE_XP, COCOA_WART_MILESTONE_XP, CROP_NAMES, GARDEN_LEVELS_XP, MAX_COMPOSTER_UPGRADE_LEVEL, MAX_CROP_MILESTONE, MAX_CROP_UPGRADE_LEVEL, MAX_GARDEN_LEVEL, MAX_PLOTS, MELON_MILESTONE_XP, WHEAT_PUMPKIN_MUSHROOM_MILESTONE_XP};
 use crate::constants::misc::{MAX_BESTIARY_LEVEL, MAX_ENIGMA_SOULS, MAX_FAIRY_SOULS, MAX_MINING_COMMISSION_MILESTONE, MAX_TIMECHARMS, SLAYER_XP_REQUIRED, TROPHY_FISHING_TIERS};
 use crate::constants::setups::SetupType;
@@ -7,15 +6,16 @@ use crate::extensions::json_ext::JsonExt;
 use crate::item_utils::{get_pet_info, get_pet_obj, get_pretty_name};
 use crate::live_data::jacob_contests::get_upcoming_contests;
 use crate::live_data::mayor_info::{get_election_over_time_left, get_mayor_info, get_skyblock_date, get_special_mayors_info};
-use crate::tools::profile_fetcher::{get_garden_data, get_museum_items};
 use crate::prices::bazaar::get_buy_price;
 use crate::prices::item_value_calculator::{calculate_item_value, get_pet_value};
+use crate::repos::neu::items::{find_best_matches, get_item_display_name};
+use crate::structs::item_structs::ItemValue;
 use crate::structs::player_data_structs::{Item, Pet, PlayerDataResponse, StringBuilder};
+use crate::tools::profile_fetcher::{get_garden_data, get_museum_items};
 use crate::utils::{format_number, format_number_with_commas, get_time_as_secs};
 use serde_json::Value;
+use std::cmp::max;
 use std::collections::HashMap;
-use crate::repos::neu::items::get_item_display_name;
-use crate::structs::item_structs::ItemValue;
 
 pub async fn get_player_overview(pdr: &mut PlayerDataResponse) {
     let mut sb = StringBuilder::new();
@@ -82,7 +82,7 @@ pub async fn get_player_overview(pdr: &mut PlayerDataResponse) {
         }
     } else { sb.push("Skills: unavailable".to_owned()) }
 
-    pdr.set_resp(sb);
+    pdr.set_sb(sb);
 }
 
 pub async fn get_mining_info(pdr: &mut PlayerDataResponse) {
@@ -136,7 +136,7 @@ pub async fn get_mining_info(pdr: &mut PlayerDataResponse) {
         }
     }
 
-    pdr.set_resp(sb);
+    pdr.set_sb(sb);
 }
 
 pub async fn get_garden_info(pdr: &mut PlayerDataResponse) {
@@ -223,7 +223,7 @@ pub async fn get_garden_info(pdr: &mut PlayerDataResponse) {
         }
     }
 
-    pdr.set_resp(sb);
+    pdr.set_sb(sb);
 }
 
 pub async fn get_foraging_info(pdr: &mut PlayerDataResponse) {
@@ -234,7 +234,7 @@ pub async fn get_foraging_info(pdr: &mut PlayerDataResponse) {
 
     pdr.profile().add_setup_info(SetupType::Foraging, &mut sb);
 
-    pdr.set_resp(sb);
+    pdr.set_sb(sb);
 }
 
 pub async fn get_fishing_info(pdr: &mut PlayerDataResponse) {
@@ -250,7 +250,7 @@ pub async fn get_fishing_info(pdr: &mut PlayerDataResponse) {
     sb.pushln();
     pdr.profile().add_setup_info(SetupType::Fishing, &mut sb);
 
-    pdr.set_resp(sb);
+    pdr.set_sb(sb);
 }
 
 pub async fn get_slayer_info(pdr: &mut PlayerDataResponse) {
@@ -269,7 +269,7 @@ pub async fn get_slayer_info(pdr: &mut PlayerDataResponse) {
         }
     } else { sb.push("Slayers: unavailable".to_owned()) }
 
-    pdr.set_resp(sb);
+    pdr.set_sb(sb);
 }
 
 pub async fn get_dungeons_info(pdr: &mut PlayerDataResponse) {
@@ -353,7 +353,7 @@ pub async fn get_dungeons_info(pdr: &mut PlayerDataResponse) {
         }
     }
 
-    pdr.set_resp(sb);
+    pdr.set_sb(sb);
 }
 
 pub async fn get_events_info(sb: &mut StringBuilder) {
@@ -479,7 +479,7 @@ pub async fn get_inventory(pdr: &mut PlayerDataResponse) {
         }
     }
 
-    pdr.set_resp(sb);
+    pdr.set_sb(sb);
 }
 
 pub async fn get_misc_info(pdr: &mut PlayerDataResponse) {
@@ -559,7 +559,7 @@ pub async fn get_misc_info(pdr: &mut PlayerDataResponse) {
         }
     }
 
-    pdr.set_resp(sb);
+    pdr.set_sb(sb);
 }
 
 pub async fn get_profile_networth(pdr: &mut PlayerDataResponse, detailed: bool) {
@@ -583,7 +583,7 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse, detailed: bool) 
             let mut value = 0;
             let mut item_values = Vec::new();
             for item in items {
-                let item_value = calculate_item_value(item.item_id(), item.nbt(), false).await;
+                let item_value = calculate_item_value(item.item_id(), item.nbt(), false, true).await;
                 item_values.push((item.name().to_owned(), item_value.value()));
                 value += item_value.value();
             }
@@ -619,7 +619,7 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse, detailed: bool) 
         let mut item_values = Vec::new();
         let mut pets_value = 0;
         for pet in storage.pets() {
-            let mut value = ItemValue::new(detailed);
+            let mut value = ItemValue::new(detailed, true);
             get_pet_value(pet, &mut value).await;
             let price = value.value();
             pets_value += price;
@@ -644,7 +644,7 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse, detailed: bool) 
         for donation in museum_donations.iter() {
             if *donation.borrowing() { continue; };
             for item in donation.items() {
-                museum_value += calculate_item_value(item.item_id(), item.nbt(), false).await.value();
+                museum_value += calculate_item_value(item.item_id(), item.nbt(), false, true).await.value();
             }
         }
     }
@@ -683,7 +683,7 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse, detailed: bool) 
         sb.push("NOTE: the player's apis are likely disabled! they should be enabled to provide correct estimation.".to_owned());
     }
 
-    pdr.set_resp(sb);
+    pdr.set_sb(sb);
 }
 
 fn get_skill_level(data: &Value, skill: &str, xp: Option<u64>) -> (u64, String) {
@@ -769,7 +769,7 @@ pub async fn get_pet(pdr: &mut PlayerDataResponse, item_name: &str, include_pric
     let matches = find_best_matches(item_name, &pet_names);
     let Some(best_pet) = matches.first() else {
         sb.push("Couldn't find any matching pet!".to_owned());
-        pdr.set_resp(sb);
+        pdr.set_sb(sb);
         return;
     };
 
@@ -777,7 +777,7 @@ pub async fn get_pet(pdr: &mut PlayerDataResponse, item_name: &str, include_pric
     match pets.iter().find(|(name, _)| name == best_pet) {
         None => sb.push("Couldn't find any matching pet!".to_owned()),
         Some((_, pet)) => {
-            let mut value = ItemValue::new(include_prices);
+            let mut value = ItemValue::new(include_prices, true);
             get_pet_value(&pet, &mut value).await;
             for line in value.info() {
                 sb.push(line.to_owned());
@@ -798,7 +798,7 @@ pub async fn get_pet(pdr: &mut PlayerDataResponse, item_name: &str, include_pric
         }
     }
 
-    pdr.set_resp(sb);
+    pdr.set_sb(sb);
 }
 
 pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, include_prices: bool) {
@@ -829,7 +829,7 @@ pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, include_pri
     let matches = find_best_matches(item_name, &item_names);
     let Some(best_item) = matches.first() else {
         sb.push("Couldn't find any matching item!".to_owned());
-        pdr.set_resp(sb);
+        pdr.set_sb(sb);
         return;
     };
 
@@ -843,7 +843,7 @@ pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, include_pri
                 false => format!("Item: {name}")
             });
 
-            let value = calculate_item_value(item.item_id(), item.nbt(), include_prices).await;
+            let value = calculate_item_value(item.item_id(), item.nbt(), include_prices, true).await;
             for line in value.info().iter().skip(1) {
                 sb.push(line.to_owned());
             }
@@ -863,52 +863,5 @@ pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, include_pri
         }
     }
 
-    pdr.set_resp(sb);
-}
-
-fn find_best_matches<'a>(query: &'a str, list: &'a [String]) -> Vec<&'a str> {
-    fn score(candidate: &str, query: &str) -> usize {
-        let query_lowercase = query.to_lowercase();
-        let candidate_lowercase = candidate.to_lowercase();
-        let query_words: Vec<_> = query_lowercase.split_whitespace().collect();
-        let candidate_words: Vec<_> = candidate_lowercase.split_whitespace().collect();
-        let mut score = 0;
-
-        for qw in &query_words {
-            score += match () {
-                _ if candidate_words.iter().any(|cw| cw == qw) => 5, // Exact match
-                _ if candidate_words.iter().any(|cw| cw.starts_with(qw)) => 3, // Prefix match
-                _ if candidate_words.iter().any(|cw| cheap_distance(cw, qw) <= 2) => 2, // Fuzzy match: allow 1-2 typos
-                _ => 0
-            };
-        }
-
-        score
-    }
-
-    // char-difference distance
-    fn cheap_distance(a: &str, b: &str) -> usize {
-        let a: Vec<char> = a.chars().collect();
-        let b: Vec<char> = b.chars().collect();
-        let len = a.len().max(b.len());
-        let mut dif = 0;
-        for i in 0..len {
-            if a.get(i) != b.get(i) {
-                dif += 1;
-            }
-        }
-        dif
-    }
-
-    let mut scored: Vec<(&str, usize)> = list
-        .iter()
-        .map(|item| (item.as_str(), score(item, query)))
-        .filter(|(_, s)| *s > 0)
-        .collect();
-
-    // Sort descending by score, then shorter names
-    scored.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.len().cmp(&b.0.len())));
-
-    // Return top 5
-    scored.into_iter().take(5).map(|(s, _)| s).collect()
+    pdr.set_sb(sb);
 }

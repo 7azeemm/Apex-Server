@@ -3,7 +3,7 @@ use crate::extensions::json_ext::JsonExt;
 use crate::http::{get_api_key, send_http_request};
 use crate::item_utils::{decode_items, get_item_id, get_item_name, get_pet_level, get_pet_obj, get_pretty_name};
 use crate::structs::item_structs::ItemNbt;
-use crate::structs::player_data_structs::{MuseumDonation, Item, PlayerData, PlayerProfile, PlayerSetup, Storage, StringBuilder};
+use crate::structs::player_data_structs::{Item, MuseumDonation, PlayerData, PlayerProfile, PlayerSetup, Storage, StringBuilder};
 use rustc_hash::FxHashMap;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
@@ -266,7 +266,7 @@ fn scan_storage(data: &Value) -> Storage {
 fn scan_setups(storage: &Storage) -> HashMap<SetupType, PlayerSetup> {
     let mut setups = HashMap::new();
     let player_items: HashMap<String, String> = storage.get_items_list().iter()
-        .map(|i| (i.item_id().replace("STARRED_", ""), i.name().to_owned()))
+        .map(|i| (i.item_id().to_owned(), i.name().to_owned()))
         .collect();
     let pet_ids: Vec<String> = storage.pets().iter().map(|p| p.name().to_owned()).collect();
 
@@ -314,7 +314,7 @@ fn scan_setups(storage: &Storage) -> HashMap<SetupType, PlayerSetup> {
 
             for set in player_sets.iter() {
                 let set_score = set.iter().filter(|piece| {
-                    piece.as_ref().map_or(false, |p| armor_ids.contains(&p.item_id().replace("STARRED_", "")))
+                    piece.as_ref().map_or(false, |p| armor_ids.contains(p.item_id()))
                 }).count();
 
                 if set_score > score {

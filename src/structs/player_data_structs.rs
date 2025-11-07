@@ -1,6 +1,6 @@
 use crate::constants::setups::SetupType;
-use crate::tools::profile_fetcher::get_player_profile;
 use crate::structs::item_structs::ItemNbt;
+use crate::tools::profile_fetcher::get_player_profile;
 use crate::utils::get_player_uuid;
 use derive_new::new;
 use getset::Getters;
@@ -15,14 +15,14 @@ pub struct PlayerDataResponse {
     profile_name: Option<String>,
     player_uuid: String,
     profile: PlayerProfile,
-    resp: Option<String>,
+    sb: Option<StringBuilder>,
 }
 
 impl PlayerDataResponse {
     pub async fn new(username: String, profile_name: Option<String>) -> Result<Self, Box<dyn Error>> {
-        let player_uuid = get_player_uuid(&username).await?;
+        let player_uuid = get_player_uuid(&username).await.ok_or("Couldn't get player_uuid")?;
         let profile = get_player_profile(&username, &player_uuid, profile_name.clone()).await?;
-        Ok(Self { username, profile_name, player_uuid, profile, resp: None })
+        Ok(Self { username, profile_name, player_uuid, profile, sb: None })
     }
     pub fn username(&self) -> &str { &self.username }
     pub fn profile_name(&self) -> &Option<String> { &self.profile_name }
@@ -30,9 +30,9 @@ impl PlayerDataResponse {
     pub fn profile(&self) -> &PlayerProfile { &self.profile }
     pub fn profile_mut(&mut self) -> &mut PlayerProfile { &mut self.profile }
     pub fn profile_data(&self) -> &Value { &self.profile.data }
-    pub fn get_resp(&self) -> Option<String> { self.resp.clone() }
+    pub fn get_sb(&self) -> &Option<StringBuilder> { &self.sb }
 
-    pub fn set_resp(&mut self, resp: StringBuilder) { self.resp = Some(resp.lines.join("\n")) }
+    pub fn set_sb(&mut self, sb: StringBuilder) { self.sb = Some(sb) }
 }
 
 pub struct StringBuilder {
@@ -49,6 +49,8 @@ impl StringBuilder {
             self.lines.push(line)
         }
     }
+
+    pub fn get_response(&self) -> String { self.lines.join("\n") }
 }
 
 #[derive(Default, Clone)]

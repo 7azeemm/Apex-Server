@@ -1,11 +1,11 @@
+use crate::constants::misc::{MAGICAL_POWER, RARITIES, SPECIAL_TALISMANS};
 use crate::item_utils::{get_item_rarity, get_pretty_name, get_rarity_index};
+use crate::prices::auctions::get_lowest_bin;
 use crate::repos::neu::items::ACCESSORIES;
 use crate::repos::neu::talisman_upgrades::{get_talisman_upgrades, IGNORED_TALISMANS};
 use crate::structs::player_data_structs::{PlayerDataResponse, StringBuilder};
-use std::collections::{HashMap, HashSet};
-use crate::constants::misc::{MAGICAL_POWER, RARITIES, SPECIAL_TALISMANS};
-use crate::prices::auctions::get_lowest_bin;
 use crate::utils::format_number;
+use std::collections::{HashMap, HashSet};
 
 const ITEMS_PER_PAGE: usize = 10;
 
@@ -285,7 +285,7 @@ pub async fn get_missing_accessories(pdr: &mut PlayerDataResponse, page: u64, so
         sb.push("- Some accessories may have multiple upgrade tiers not shown on this page.".to_string());
     }
 
-    pdr.set_resp(sb);
+    pdr.set_sb(sb);
 }
 
 fn get_magical_power(talisman: &Talisman, with_recomb: bool) -> u64 {

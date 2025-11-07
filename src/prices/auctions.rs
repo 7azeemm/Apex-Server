@@ -1,19 +1,22 @@
 use crate::endpoints::AuctioneerAuctionItem;
 use crate::http::send_raw_http_request;
 use crate::item_utils::{decode_item, get_item_id};
-use crate::prices::item_value_calculator;
-use crate::structs::auctions_structs::{Auction, AuctionItem, AuctionManager, AuctionsResponse, LowestBinItem};
-use crate::utils::get_time_as_secs;
+use crate::prices::cosmetic_prices::get_cosmetic_price;
+use crate::prices::item_value_calculator::calculate_item_value;
+use crate::repos::neu::items::get_id_by_name;
+pub(crate) use crate::structs::auctions_structs::{Auction, AuctionItem, AuctionManager, AuctionsResponse, Budget, LowestBinItem};
+use crate::structs::player_data_structs::StringBuilder;
+use crate::utils::{format_number, get_player_username, get_time_as_secs};
 use futures_util::stream::FuturesUnordered;
 use futures_util::StreamExt;
 use std::cmp::max;
 use std::collections::HashMap;
 use std::error::Error;
+use std::fmt::Display;
 use std::sync::LazyLock;
 use std::time::{Duration, Instant};
 use tokio::sync::Notify;
 use tokio::time::{interval, interval_at, sleep};
-use crate::prices::cosmetic_prices::get_cosmetic_price;
 
 const API_ENDPOINT: &str = "https://api.hypixel.net/v2/skyblock/auctions";
 const THRESHOLD: u64 = 70;
@@ -135,7 +138,7 @@ async fn process_auction(auction: &Auction) {
     };
 
     if let Some(id) = get_item_id(&item_nbt) {
-        let auction_item = AuctionItem::new(auction, id, item_nbt);
+        let auction_item = AuctionItem::new(auction_id.to_owned(), auction, id, item_nbt);
         let mut to_add = AUCTION_MANAGER.to_add.write().await;
         to_add.insert(auction_id.to_owned(), auction_item);
     }
@@ -216,8 +219,153 @@ async fn update_auctions_values() {
 async fn calc_auction_value(auction: &mut AuctionItem) {
     let item_id = auction.item_id();
     let item_nbt = auction.item_nbt();
-    let item_value = item_value_calculator::calculate_item_value(item_id, item_nbt, false).await;
+    let item_value = calculate_item_value(item_id, item_nbt, false, true).await;
     auction.set_value(item_value);
+}
+
+fn get_max_price(lowest_bin: u64, budget: &Budget) -> u64 {
+    let additions = match lowest_bin {
+        0..=5_000_000 => [3_000_000, 8_000_000, 16_000_000, u64::MAX],
+        5_000_001..=25_000_000 => [8_000_000, 40_000_000, 60_000_000, u64::MAX],
+        25_000_001..=100_000_000 => [15_000_000, 40_000_000, 60_000_000, u64::MAX],
+        100_000_001..=200_000_000 => [15_000_000, 50_000_000, 80_000_000, u64::MAX],
+        200_000_001..=1_000_000_000 => [30_000_000, 75_000_000, 150_000_000, u64::MAX],
+        _ => [50_000_000, 150_000_000, 300_000_000, u64::MAX]
+    };
+
+    let addition = match budget {
+        Budget::Low => additions[0],
+        Budget::Medium => additions[1],
+        Budget::High => additions[2],
+        Budget::NoLimit => additions[3]
+    };
+
+    lowest_bin.saturating_add(addition)
+}
+
+pub async fn search_in_auction_house(sb: &mut StringBuilder, name: &str, pet: bool, budget: Budget) {
+    let item_ids = get_id_by_name(name, pet).await;
+
+    if item_ids.is_empty() {
+        sb.push("Couldn't find any auctions by that name".to_owned());
+        return
+    }
+
+    // Collect auctions by item_id
+    let mut auctions_by_id: HashMap<String, Vec<AuctionItem>> = HashMap::new();
+    {
+        let auctions_list = AUCTION_MANAGER.auctions.read().await;
+        for auction in auctions_list.values() {
+            let auction_item_id = auction.item_id();
+            if item_ids.contains(auction_item_id) {
+                auctions_by_id.entry(auction_item_id.to_owned()).or_insert_with(Vec::new).push(auction.clone());
+            }
+        }
+    }
+
+    if auctions_by_id.is_empty() {
+        sb.push("No auctions available for these items".to_owned());
+        return;
+    }
+
+    let mut lowest_bins = HashMap::new();
+    for item_id in &item_ids {
+        if let Some(lowest_bin) = get_lowest_bin(item_id).await {
+            lowest_bins.insert(item_id.clone(), lowest_bin);
+        }
+    }
+
+    if lowest_bins.is_empty() {
+        sb.push("No lowest bin data available for these items".to_owned());
+        return;
+    }
+
+    let mut current_budget = budget;
+    let mut auctions = HashMap::new();
+    let mut switched_budget = false;
+
+    loop {
+        let mut found_auctions = false;
+
+        for (item_id, auction_list) in &auctions_by_id {
+            if let Some(&lowest_bin) = lowest_bins.get(item_id) {
+                let max_price = get_max_price(lowest_bin, &current_budget);
+                for auction in auction_list {
+                    if *auction.price() < max_price {
+                        auctions.insert(auction.auction_id().to_owned(), auction.clone());
+                        found_auctions = true;
+                    }
+                }
+            }
+        }
+
+        if found_auctions {
+            break;
+        }
+
+        // Escalate to next budget or break
+        current_budget = match current_budget {
+            Budget::Low => Budget::Medium,
+            Budget::Medium => Budget::High,
+            Budget::High => Budget::NoLimit,
+            Budget::NoLimit => {
+                sb.push("Couldn't find any auctions by that name".to_owned());
+                return;
+            }
+        };
+        switched_budget = true;
+    }
+
+    let mut valued_items = Vec::new();
+    for (auction_id, auction) in auctions {
+        let value = calculate_item_value(auction.item_id(), auction.item_nbt(), true, false).await;
+        let price = *auction.price();
+        let estimated_value = value.value();
+        if price > 0 {
+            valued_items.push((auction_id, auction, value, estimated_value as f64 - price as f64));
+        }
+    }
+
+    valued_items.sort_by(|a, b| b.3.partial_cmp(&a.3).unwrap_or(std::cmp::Ordering::Equal)
+        .then(a.1.price().cmp(&b.1.price())));
+
+    if let Some((auction_id, auction, value, profit)) = valued_items.first() {
+        let auctioneer_username = get_player_username(auction.auctioneer()).await.unwrap_or("Unknown".to_owned());
+        let price = *auction.price();
+        let lowest_bin = *lowest_bins.get(auction.item_id()).unwrap_or(&0);
+        let estimated_value = value.value();
+        sb.push(format!("Item Name: {}", auction.item_name()));
+        sb.push(format!("Auction ID: {auction_id}"));
+        sb.push(format!("Auctioneer Username: {auctioneer_username}"));
+        sb.push(format!("LowestBIN: {} coins", format_number(lowest_bin)));
+        sb.push(format!("Price: {} coins", format_number(price)));
+        sb.push(format!("Estimated Item Value: {} coins", format_number(estimated_value)));
+        if switched_budget {
+            sb.push(format!("No matches were found in your budget, so the search was expanded to {current_budget}."));
+        }
+        match price == lowest_bin {
+            true => sb.push("This item is the lowestBIN!".to_owned()),
+            false => sb.push(format!("Profit: {} coins", format_number(*profit as u64)))
+        }
+        if value.info().len() > 3 {
+            sb.push("Item Details:".to_owned());
+            for line in value.info().iter().skip(1) {
+                if line.contains("Estimated Item Value") { continue };
+                sb.push(format!("- {line}"));
+            }
+        }
+    }
+
+    let others = valued_items.into_iter().skip(1).take(3);
+    if others.len() > 0 {
+        sb.pushln();
+        sb.push("Other Auctions:".to_owned());
+    }
+
+    for (auction_id, auction, value, profit) in others {
+        sb.push(format!("- Item Name: {} (Auction ID: {auction_id})", auction.item_name()));
+        sb.push(format!("  Price: {} coins, Estimated Item Value: {} coins, Profit: {} coins", format_number(*auction.price()), format_number(value.value()), format_number(profit as u64)));
+    }
 }
 
 pub async fn get_base_price(item_id: &str) -> Option<u64> {

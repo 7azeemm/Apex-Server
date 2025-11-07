@@ -1,11 +1,11 @@
+use crate::constants::misc::ISLAND_NAMES;
 use crate::extensions::json_ext::JsonExt;
 use crate::http::{get_api_key, send_http_request};
 use crate::item_utils::get_pretty_name;
-use crate::tools::profile_fetcher::get_profiles_info;
 use crate::structs::player_data_structs::{PlayerDataResponse, StringBuilder};
+use crate::tools::profile_fetcher::get_profiles_info;
 use chrono::Utc;
 use serde_json::Value;
-use crate::constants::misc::ISLAND_NAMES;
 
 const PLAYER_ENDPOINT: &str = "https://api.hypixel.net/v2/player";
 const STATUS_ENDPOINT: &str = "https://api.hypixel.net/v2/status";
@@ -44,7 +44,7 @@ pub async fn get_player_info(pdr: &mut PlayerDataResponse) {
 
     get_profiles_info(player_uuid, &mut sb).await;
 
-    pdr.set_resp(sb)
+    pdr.set_sb(sb)
 }
 
 async fn get_player_status(player_uuid: &str) -> Option<String> {

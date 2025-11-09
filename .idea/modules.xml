@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/backend-server.iml" filepath="$PROJECT_DIR$/.idea/backend-server.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/SkyBlock-Mod-Backend.iml" filepath="$PROJECT_DIR$/.idea/SkyBlock-Mod-Backend.iml" />
     </modules>
   </component>
 </project>

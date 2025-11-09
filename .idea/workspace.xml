@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="CargoProjects">
+    <cargoProject FILE="$PROJECT_DIR$/Cargo.toml">
+      <package file="$PROJECT_DIR$/common">
+        <feature name="default" enabled="true" />
+      </package>
+      <package file="$PROJECT_DIR$/core">
+        <feature name="default" enabled="true" />
+      </package>
+      <package file="$PROJECT_DIR$/skyblock_tools">
+        <feature name="default" enabled="true" />
+      </package>
+    </cargoProject>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/SkyBlock-Mod-Backend.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/common/src/player_fetcher.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/backend-server.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/project.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/project.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/git_toolbox_prj.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/constants/enchantments.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/constants/garden.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/constants/misc.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/constants/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/constants/pets.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/constants/setups.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/constants/skills.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/endpoints.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/extensions/fastnbt_ext.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/extensions/json_ext.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/extensions/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/helpers/accessory_helper.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/helpers/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/helpers/museum_helper.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/http.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/item_utils.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/live_data/jacob_contests.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/live_data/mayor_info.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/live_data/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/prices/auctions.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/prices/bazaar.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/prices/cosmetic_prices.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/prices/item_value_calculator.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/prices/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/repos/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/repos/neu/essence_costs.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/repos/neu/gemstone_slots_cost.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/repos/neu/items.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/repos/neu/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/repos/neu/museum_donations.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/repos/neu/neu_repo.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/repos/neu/reforge_stones.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/repos/neu/talisman_upgrades.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/repos/repo_manager.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/repos/wiki/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/repos/wiki/wiki_repo.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/repos/wiki/wiki_searcher.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/structs/auctions_structs.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/structs/bazaar_structs.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/structs/item_structs.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/structs/mayor_info_structs.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/structs/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/structs/player_data_structs.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/structs/repo_structs.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/structs/value_calc_structs.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/structs/wiki_structs.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tools/hypixel_tools.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tools/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tools/profile_fetcher.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tools/skyblock_tools.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils.rs" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="RsBuildProfile:dev" />
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Rust File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;7azeemm&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/7azeemm/SkyBlock-Mod-Backend.git&quot;,
+    &quot;accountId&quot;: &quot;2e1a4f15-8366-497c-b827-0aaf99b4ee62&quot;
+  }
+}</component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="JBiEFEIk" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 2
+}</component>
+  <component name="ProjectId" id="35EujckCNfjfvzi3hmdKWSqNd6k" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;Cargo.Run core.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Run skyblock_tools.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
+    &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
+    &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;language.rust.rustfmt&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\RustroverProjects\SkyBlock-Mod-Backend\common\src" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Cargo.Run skyblock_tools">
+    <configuration name="Run core" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="command" value="run --package core --bin core" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Run skyblock_tools" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="run --package skyblock_tools --bin skyblock_tools" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Cargo.Run skyblock_tools" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="RustProjectSettings">
+    <option name="toolchainHomeDirectory" value="$PROJECT_DIR$/../../cargo/bin" />
+  </component>
+  <component name="RustfmtProjectSettings">
+    <option name="useRustfmt2" value="false" />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="" />
+      <created>1762687691830</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1762687691830</updated>
+      <workItem from="1762687694200" duration="1524000" />
+      <workItem from="1762689270660" duration="7002000" />
+      <workItem from="1762697248317" duration="6553000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="UnknownFeatures">
+    <option featureType="com.intellij.fileTypeFactory" implementationName=".env" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

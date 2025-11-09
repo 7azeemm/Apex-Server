@@ -1,0 +1,25 @@
+[package]
+name = "skyblock_tools"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+common = { path = "../common" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+once_cell = { workspace = true }
+rustc-hash = { workspace = true }
+futures-util = { workspace = true }
+fastnbt = { workspace = true }
+base64 = { workspace = true }
+flate2 = { workspace = true }
+async-trait = { workspace = true }
+phf = { workspace = true }
+axum = { workspace = true }
+chrono = { workspace = true }
+git2 = { workspace = true }
+dotenv = { workspace = true }
+derive-new = { workspace = true }
+getset = { workspace = true }
+tantivy = { workspace = true }

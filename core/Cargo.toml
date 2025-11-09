@@ -1,0 +1,24 @@
+[package]
+name = "core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+common = { path = "../common" }
+axum = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+uuid = { workspace = true }
+base64 = { workspace = true }
+rsa = { workspace = true }
+sha1 = { workspace = true }
+sqlx = { workspace = true }
+futures = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+reqwest = { workspace = true }
+once_cell = { workspace = true }
+chrono = { workspace = true }
+dotenvy = { workspace = true }
+derive-new = { workspace = true }
+getset = { workspace = true }

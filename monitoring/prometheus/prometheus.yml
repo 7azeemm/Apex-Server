@@ -1,0 +1,42 @@
+global:
+  scrape_interval: 15s  # How often to scrape metrics from targets
+  evaluation_interval: 15s  # How often to evaluate alerting rules
+
+# Alertmanager configuration (optional, for alerts)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: []
+
+# Load rules once and periodically evaluate them
+# rule_files:
+#   - "alerts.yml"
+
+# Scrape configurations - what to monitor
+scrape_configs:
+  # Monitor Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          instance: 'prometheus'
+
+  # Monitor backend
+  # This assumes your app exposes metrics at /metrics endpoint
+  - job_name: 'rust-backend'
+    static_configs:
+      - targets: ['host.docker.internal:8080']  # Replace 8080 with your app's port
+        labels:
+          app: 'rust-backend'
+          environment: 'development'
+    # scrape_interval: 5s  # Override global interval if needed
+    # metrics_path: '/metrics'  # Default path, change if different
+
+  # Example: Monitor multiple instances
+  # - job_name: 'rust-backend-prod'
+  #   static_configs:
+  #     - targets:
+  #         - 'host.docker.internal:8080'
+  #         - 'host.docker.internal:8081'
+  #       labels:
+  #         environment: 'production'

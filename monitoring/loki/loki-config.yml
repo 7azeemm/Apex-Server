@@ -1,0 +1,39 @@
+auth_enabled: false  # Disable authentication for local development
+
+server:
+  http_listen_port: 3100  # Port Loki listens on
+  grpc_listen_port: 9096
+
+# Where to store data
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
+
+# Schema configuration - how logs are stored
+schema_config:
+  configs:
+    - from: 2020-10-24
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+# Ruler for alerts (optional)
+ruler:
+  alertmanager_url: http://localhost:9093
+
+# Limits configuration
+limits_config:
+  retention_period: 744h  # 31 days retention
+  ingestion_rate_mb: 10
+  ingestion_burst_size_mb: 20

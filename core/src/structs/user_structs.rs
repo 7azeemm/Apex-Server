@@ -80,9 +80,9 @@ impl FromStr for Plan {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "Free" => Ok(Plan::Free),
-            "Plus" => Ok(Plan::Plus),
-            "Pro" => Ok(Plan::Pro),
+            "FREE" => Ok(Plan::Free),
+            "PLUS" => Ok(Plan::Plus),
+            "PRO" => Ok(Plan::Pro),
             _ => Err(()),
         }
     }

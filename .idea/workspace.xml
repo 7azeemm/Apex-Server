@@ -17,71 +17,26 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/SkyBlock-Mod-Backend.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/common/src/player_fetcher.rs" afterDir="false" />
+    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="Surprise">
+      <change afterPath="$PROJECT_DIR$/common/src/logger.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/monitoring/docker-compose.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/monitoring/grafana/provisioning/datasources/datasources.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/monitoring/loki/loki-config.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/monitoring/prometheus/prometheus.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/monitoring/promtail/promtail-config.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/monitoring/useful_cmds.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/backend-server.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/project.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/project.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/git_toolbox_prj.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/SkyBlock-Mod-Backend.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/SkyBlock-Mod-Backend.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/constants/enchantments.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/constants/garden.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/constants/misc.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/constants/mod.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/constants/pets.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/constants/setups.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/constants/skills.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/endpoints.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/extensions/fastnbt_ext.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/extensions/json_ext.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/extensions/mod.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/helpers/accessory_helper.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/helpers/mod.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/helpers/museum_helper.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/http.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/item_utils.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/live_data/jacob_contests.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/live_data/mayor_info.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/live_data/mod.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/prices/auctions.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/prices/bazaar.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/prices/cosmetic_prices.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/prices/item_value_calculator.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/prices/mod.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/repos/mod.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/repos/neu/essence_costs.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/repos/neu/gemstone_slots_cost.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/repos/neu/items.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/repos/neu/mod.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/repos/neu/museum_donations.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/repos/neu/neu_repo.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/repos/neu/reforge_stones.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/repos/neu/talisman_upgrades.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/repos/repo_manager.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/repos/wiki/mod.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/repos/wiki/wiki_repo.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/repos/wiki/wiki_searcher.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/structs/auctions_structs.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/structs/bazaar_structs.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/structs/item_structs.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/structs/mayor_info_structs.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/structs/mod.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/structs/player_data_structs.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/structs/repo_structs.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/structs/value_calc_structs.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/structs/wiki_structs.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/tools/hypixel_tools.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/tools/mod.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/tools/profile_fetcher.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/tools/skyblock_tools.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/common/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/common/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/common/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/common/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/core/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/structs/user_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/structs/user_structs.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/skyblock_tools/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/Cargo.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -92,6 +47,7 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
+        <option value="Dockerfile" />
         <option value="Rust File" />
       </list>
     </option>
@@ -148,7 +104,7 @@
     &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
     &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
     &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;language.rust.rustfmt&quot;
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
 }</component>
   <component name="RecentsManager">
@@ -156,7 +112,7 @@
       <recent name="D:\RustroverProjects\SkyBlock-Mod-Backend\common\src" />
     </key>
   </component>
-  <component name="RunManager" selected="Cargo.Run skyblock_tools">
+  <component name="RunManager" selected="Cargo.Run core">
     <configuration name="Run core" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="run --package core --bin core" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -212,8 +168,27 @@
       <updated>1762687691830</updated>
       <workItem from="1762687694200" duration="1524000" />
       <workItem from="1762689270660" duration="7002000" />
-      <workItem from="1762697248317" duration="6553000" />
+      <workItem from="1762697248317" duration="8641000" />
+      <workItem from="1762934485684" duration="4746000" />
+      <workItem from="1762966853146" duration="2885000" />
+      <workItem from="1762972024670" duration="602000" />
+      <workItem from="1762972894836" duration="1708000" />
+      <workItem from="1762974658833" duration="1840000" />
+      <workItem from="1762976967301" duration="3684000" />
+      <workItem from="1763024360420" duration="5731000" />
+      <workItem from="1763055687538" duration="5083000" />
+      <workItem from="1763130095746" duration="118000" />
+      <workItem from="1763130243765" duration="5594000" />
     </task>
+    <task id="LOCAL-00001" summary="Surprise">
+      <option name="closed" value="true" />
+      <created>1762703965943</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1762703965943</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -232,5 +207,21 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Surprise" />
+    <option name="LAST_COMMIT_MESSAGE" value="Surprise" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
   </component>
 </project>

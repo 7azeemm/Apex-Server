@@ -18,6 +18,9 @@ phf = { version = "0.13.1", features = ["macros"] }
 rsa = { version = "0.10.0-rc.10", features = ["sha1", "sha2"] }
 uuid = { version = "1.18.1", features = ["v4", "serde"] }
 sqlx = { version = "0.9.0-alpha.1", features = ["runtime-tokio", "postgres", "uuid", "json", "chrono", "macros"] }
+tracing-subscriber = { version = "0.3.20", features = ["json", "env-filter"]}
+tracing = "0.1.41"
+tracing-appender = "0.2.3"
 sha1 = "0.11.0-rc.3"
 sha2 = "0.11.0-rc.3"
 dotenvy = "0.15.7"

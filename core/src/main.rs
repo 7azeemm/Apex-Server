@@ -17,10 +17,13 @@ use std::error::Error;
 use std::net::SocketAddr;
 use std::time::Duration;
 use tokio::net::TcpListener;
+use common::logger;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();
+    logger::setup_logging();
+    tracing::info!("Starting application...");
 
     database::connect().await;
     auth::schedule();
@@ -39,7 +42,7 @@ async fn app() {
         .route("/chat/completions", post(completions_handler))
         .layer(middleware::from_fn(auth_middleware));
 
-    let app = Router::new()
+    let rate_limited_routes = Router::new()
         .route("/auth", post(auth))
         .nest("/api", api_router)
         .layer(middleware::from_fn_with_state(
@@ -48,7 +51,10 @@ async fn app() {
         ))
         .with_state(rate_limiter);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let app = Router::new()
+        .merge(rate_limited_routes);
+
+    let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
     let listener = TcpListener::bind(addr).await.expect("Failed to bind to address");
     axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>()).await.expect("Failed to start server");
 }

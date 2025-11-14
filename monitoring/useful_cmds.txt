@@ -1,0 +1,22 @@
+# Start everything
+docker-compose up -d
+
+# Stop everything
+docker-compose down
+
+# Restart a specific service
+docker-compose restart prometheus
+
+# View logs
+docker-compose logs -f grafana
+docker-compose logs -f prometheus
+
+# Rebuild after config changes
+docker-compose down
+docker-compose up -d
+
+# Remove everything including volumes (fresh start)
+docker-compose down -v
+
+# List
+docker ps

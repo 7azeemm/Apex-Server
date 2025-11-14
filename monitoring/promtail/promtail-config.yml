@@ -1,0 +1,61 @@
+server:
+  http_listen_port: 9080  # Promtail's own metrics endpoint
+  grpc_listen_port: 0
+
+# Where to send logs
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+# Position file to track what's been read
+positions:
+  filename: /tmp/positions.yaml
+
+# Scrape configs - what log files to read
+scrape_configs:
+  # Read your Rust app's log files
+  - job_name: rust-backend-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: rust-backend
+          app: rust-backend
+          environment: development
+          __path__: /logs/app.log.*  # Match app.log.YYYY-MM-DD pattern
+
+    # Pipeline stages to parse and process logs
+    pipeline_stages:
+      # Parse JSON logs (if your Rust app outputs JSON)
+      - json:
+          expressions:
+            timestamp: timestamp
+            level: level
+            message: message
+            target: target
+
+      # Extract timestamp
+      - timestamp:
+          source: timestamp
+          format: RFC3339  # Adjust based on your log format
+
+      # Add labels from log content
+      - labels:
+          level:
+          target:
+
+  # Example: Read plain text logs
+  # - job_name: rust-backend-text-logs
+  #   static_configs:
+  #     - targets:
+  #         - localhost
+  #       labels:
+  #         job: rust-backend-text
+  #         __path__: /logs/*.txt
+  #   pipeline_stages:
+  #     - regex:
+  #         expression: '^\[(?P<timestamp>.*?)\] (?P<level>\w+) (?P<message>.*)$'
+  #     - timestamp:
+  #         source: timestamp
+  #         format: '2006-01-02 15:04:05'
+  #     - labels:
+  #         level:

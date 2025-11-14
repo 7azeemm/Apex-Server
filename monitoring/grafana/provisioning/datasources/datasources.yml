@@ -1,0 +1,23 @@
+apiVersion: 1
+
+# Auto-configure data sources in Grafana
+datasources:
+  # Prometheus data source for metrics
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true  # Make this the default data source
+    editable: true
+    jsonData:
+      timeInterval: 15s
+      queryTimeout: 60s
+
+  # Loki data source for logs
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: true
+    jsonData:
+      maxLines: 1000

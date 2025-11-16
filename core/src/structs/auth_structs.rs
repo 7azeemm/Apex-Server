@@ -6,7 +6,6 @@ use derive_new::new;
 use getset::Getters;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
-use std::fmt::Display;
 use uuid::Uuid;
 use crate::structs::plan::Plan;
 use crate::structs::user::User;

@@ -24,7 +24,7 @@ use std::sync::Arc;
 use semver::Version;
 use tokio::sync::RwLock;
 use tokio::time::{interval_at, Instant};
-use tracing::{error, info};
+use tracing::error;
 use uuid::Uuid;
 use crate::constants::{CONTACTS, MAINTENANCE, MIN_VERSION};
 use crate::structs::api_structs::ApiResponse;

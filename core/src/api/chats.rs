@@ -7,7 +7,7 @@ use axum::response::Response;
 use axum::Extension;
 use chrono::Utc;
 use serde_json::json;
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;

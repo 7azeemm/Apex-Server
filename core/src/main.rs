@@ -19,9 +19,6 @@ use std::time::Duration;
 use tokio::net::TcpListener;
 use common::logger;
 use utils::database;
-use crate::constants::MAINTENANCE;
-use crate::api::users::upgrade_plan;
-use crate::structs::plan::Plan;
 use crate::workers::{daily_token_reset, plan_expiration};
 
 #[tokio::main]
@@ -36,8 +33,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     plan_expiration::schedule();
 
     tracing::info!("Server is ready");
-
-    upgrade_plan("10be71d9-2a0d-4ed1-874a-ac6ddd256d40", "7azem_", Plan::Pro).await;
 
     app().await;
     tokio::signal::ctrl_c().await?;

@@ -1,12 +1,11 @@
 use crate::utils::database::get_db_pool;
 use crate::structs::auth_structs::Session;
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{error, info};
+use tracing::error;
 use common::discord_logger;
-use common::player_fetcher::get_player_username;
 use crate::api::auth::{add_pending_notification, remove_user_session};
 use crate::structs::api_structs::ApiResponse;
 use crate::structs::plan::{ExpiredPlan, Plan};

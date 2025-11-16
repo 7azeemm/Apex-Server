@@ -2,7 +2,6 @@ use chrono::Utc;
 use derive_new::new;
 use getset::Getters;
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 use crate::structs::plan::{ExpiredPlan, Plan};
 
 #[derive(Debug, Serialize, Deserialize, Clone, new, Getters)]
@@ -34,7 +33,7 @@ impl User {
         self.tokens_used_today += tokens;
         self.tokens_used_total += tokens;
     }
-    
+
     pub fn upgrade_plan(&mut self, new_plan: Plan) {
         let now = Utc::now().timestamp();
 
@@ -45,7 +44,7 @@ impl User {
                 now
             ));
         }
-        
+
         self.plan = new_plan;
         self.plan_started_at = now;
     }

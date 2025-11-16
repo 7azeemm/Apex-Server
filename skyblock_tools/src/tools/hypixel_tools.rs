@@ -7,6 +7,7 @@ use chrono::Utc;
 use common::extensions::json_ext::JsonExt;
 use common::http::send_http_request;
 use serde_json::Value;
+use tracing::error;
 
 const PLAYER_ENDPOINT: &str = "https://api.hypixel.net/v2/player";
 const STATUS_ENDPOINT: &str = "https://api.hypixel.net/v2/status";
@@ -19,7 +20,7 @@ pub async fn get_player_info(pdr: &mut PlayerDataResponse) {
     let json = match send_http_request(&url).await {
         Ok(json) => json,
         Err(err) => {
-            eprintln!("Err: {:?}", err);
+            error!("Failed to get player info: {:?}", err);
             return;
         }
     };
@@ -54,7 +55,7 @@ async fn get_player_status(player_uuid: &str) -> Option<String> {
     let json = match send_http_request(&url).await {
         Ok(json) => json,
         Err(err) => {
-            eprintln!("Err: {:?}", err);
+            error!("Failed to get player status: {:?}", err);
             return None;
         }
     };

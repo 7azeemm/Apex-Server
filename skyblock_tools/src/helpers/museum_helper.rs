@@ -21,7 +21,7 @@ pub async fn get_missing_museum_donations(pdr: &mut PlayerDataResponse, page: u6
 
     // Collect donated items
     let mut donated_items = HashSet::new();
-    if let Some(museum_donations) = get_museum_items(&player_uuid, pdr.profile_mut()).await {
+    if let Some(museum_donations) = get_museum_items(&player_uuid, pdr).await {
         for donation in museum_donations.iter() {
             donated_items.insert(donation.id().to_owned());
         }

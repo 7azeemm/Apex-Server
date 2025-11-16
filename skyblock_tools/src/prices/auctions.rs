@@ -17,6 +17,7 @@ use std::sync::LazyLock;
 use std::time::{Duration, Instant};
 use tokio::sync::Notify;
 use tokio::time::{interval, interval_at, sleep};
+use tracing::{error, info, warn};
 
 const API_ENDPOINT: &str = "https://api.hypixel.net/v2/skyblock/auctions";
 const THRESHOLD: u64 = 70;
@@ -49,7 +50,7 @@ pub async fn schedule() {
                     DATA_WAITER.notify_waiters();
                 }
                 Err(err) => {
-                    eprintln!("[Auctions] Error: {:?}", err);
+                    error!("[Auctions] Failed to update auctions: {:?}", err);
                     ticker = interval_at(
                         tokio::time::Instant::now() + Duration::from_secs(MIN_DELAY_SECS),
                         Duration::from_secs(THRESHOLD),
@@ -62,15 +63,9 @@ pub async fn schedule() {
 }
 
 async fn update() -> Result<u64, Box<dyn Error + Send + Sync>> {
-    println!("[Auctions] Starting Auctions update...");
-    let start_time = Instant::now();
-
     let first_page = fetch_page(0).await?;
     let total_pages = *first_page.total_pages();
-    let total_auctions = *first_page.total_auctions();
     let last_updated = *first_page.last_updated();
-
-    println!("[Auctions] Fetching {total_auctions} auctions in {total_pages} pages...");
 
     AUCTION_MANAGER.start_update().await;
     process_page(first_page.auctions()).await;
@@ -85,7 +80,7 @@ async fn update() -> Result<u64, Box<dyn Error + Send + Sync>> {
             tasks.push(tokio::spawn(async move {
                 match fetch_page(page).await {
                     Ok(page_data) => process_page(page_data.auctions()).await,
-                    Err(e) => eprintln!("[Auctions] Failed to fetch page {}: {}", page, e),
+                    Err(e) => error!("[Auctions] Failed to fetch page {}: {}", page, e),
                 }
             }));
             next_page += 1;
@@ -98,7 +93,6 @@ async fn update() -> Result<u64, Box<dyn Error + Send + Sync>> {
     calculate_base_prices().await;
     update_auctions_values().await;
 
-    println!("[Auctions] Successfully updated auctions in {:.2?}", start_time.elapsed());
     Ok(last_updated)
 }
 
@@ -106,7 +100,7 @@ async fn fetch_page(page: u64) -> Result<AuctionsResponse, Box<dyn Error + Send 
     for attempt in 0..MAX_RETRIES {
         if attempt > 0 {
             let delay = attempt.pow(2);
-            println!("[Auctions] Retrying fetching page {page} in {:.1}sc", delay);
+            warn!("[Auctions] Failed fetching page {page}. Retrying in {:.1}sc", delay);
             sleep(Duration::from_secs(delay)).await;
         }
 
@@ -140,7 +134,7 @@ async fn process_auction(auction: &Auction) {
     let item_nbt = match decode_item(auction.item_bytes()) {
         Ok(nbt) => nbt,
         Err(err) => {
-            eprintln!("Failed to decode {}, err: {err}", auction.item_name());
+            error!("Failed to decode {}, err: {err}", auction.item_name());
             return;
         }
     };

@@ -24,7 +24,7 @@ use crate::workers::{daily_token_reset, plan_expiration};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();
-    logger::setup_logging();
+    logger::setup_logging("core");
     tracing::info!("Starting...");
 
     database::connect().await;

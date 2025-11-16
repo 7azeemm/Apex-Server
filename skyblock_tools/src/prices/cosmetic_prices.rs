@@ -6,6 +6,7 @@ use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::sync::{Notify, RwLock};
 use tokio::time::{interval_at, Instant};
+use tracing::error;
 
 const ENDPOINT: &str = "https://raw.githubusercontent.com/SkyHelperBot/Prices/main/pricesV2.json";
 const THRESHOLD: u64 = 300;
@@ -18,9 +19,8 @@ pub async fn schedule() {
         let mut ticker = interval_at(Instant::now(), Duration::from_secs(THRESHOLD));
         loop {
             ticker.tick().await;
-            match update().await {
-                Ok(()) => println!("[Cosmetic-Prices] Next update in {} seconds", THRESHOLD),
-                Err(err) => eprintln!("[Cosmetic-Prices] Error: {:?}", err),
+            if let Err(err) = update().await {
+                error!("[Cosmetic-Prices] Failed to update cosmetic prices: {:?}", err);
             }
             DATA_WAITER.notify_waiters()
         }

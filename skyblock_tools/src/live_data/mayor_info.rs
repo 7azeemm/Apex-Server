@@ -8,6 +8,7 @@ use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::sync::{Notify, RwLock};
 use tokio::time::{interval_at, Instant};
+use tracing::error;
 
 const MAYOR_ENDPOINT: &str = "https://api.hypixel.net/v2/resources/skyblock/election";
 const THRESHOLD: u64 = 300;
@@ -24,9 +25,8 @@ pub async fn schedule() {
         let mut ticker = interval_at(Instant::now(), Duration::from_secs(THRESHOLD));
         loop {
             ticker.tick().await;
-            match update_mayors_info().await {
-                Ok(()) => println!("[Mayor-Info] Next update in {} seconds", THRESHOLD),
-                Err(err) => eprintln!("[Mayor-Info] Error: {:?}", err),
+            if let Err(err) = update_mayors_info().await {
+                error!("[Mayor-Info] Failed to update data: {:?}", err);
             }
             DATA_WAITER.notify_waiters()
         }
@@ -38,7 +38,7 @@ async fn update_mayors_info() -> Result<(), Box<dyn Error + Send + Sync>> {
     let json = send_http_request(MAYOR_ENDPOINT).await?;
 
     if !json.get_bool("success").unwrap_or_default() {
-        return Err("[Mayor-Info] API Request was not successful".into());
+        return Err("API Request was not successful".into());
     }
 
     let mayor_data = &json.get("mayor");

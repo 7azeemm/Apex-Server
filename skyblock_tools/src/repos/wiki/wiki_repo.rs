@@ -9,6 +9,7 @@ use std::sync::LazyLock;
 use tokio::fs;
 use tokio::sync::RwLock;
 use tokio::time::Instant;
+use tracing::{error, info};
 
 const REPO_PATH: &str = "wiki_repo";
 const REPO_URL: &str = "https://github.com/7azeemm/SkyBlock-Wiki.git";
@@ -36,7 +37,7 @@ async fn process() {
     let mut dir_entries = match fs::read_dir(format!("{REPO_PATH}/pages")).await {
         Ok(entries) => entries,
         Err(e) => {
-            eprintln!("[WIKI-Repo] Failed to read directory {}: {}", REPO_PATH, e);
+            error!("[WIKI-Repo] Failed to read directory {}: {}", REPO_PATH, e);
             return;
         }
     };
@@ -53,14 +54,14 @@ async fn process() {
         }
     }
 
-    println!("[Wiki-Repo] Processed all files in {:.2?}", start.elapsed());
+    info!("[Wiki-Repo] Processed all files in {:.2?}", start.elapsed());
 }
 
 async fn process_file(path: &Path) -> Option<(String, WikiPage)> {
     let content = match fs::read_to_string(path).await {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("[Wiki-Repo] Failed to read file {}: {}", path.display(), e);
+            error!("[Wiki-Repo] Failed to read file {}: {}", path.display(), e);
             return None;
         }
     };
@@ -68,7 +69,7 @@ async fn process_file(path: &Path) -> Option<(String, WikiPage)> {
     let json: Value = match serde_json::from_str(&content) {
         Ok(j) => j,
         Err(e) => {
-            eprintln!(
+            error!(
                 "[Wiki-Repo] Failed to parse JSON from {}: {}",
                 path.display(),
                 e

@@ -13,18 +13,11 @@ pub async fn load_gemstone_slot_costs() -> Result<(), Box<dyn Error + Send + Syn
     let mut map = FxHashMap::default();
 
     for (item, slots) in items {
-        let slots = match slots.as_object() {
-            Some(s) => s,
-            None => continue,
-        };
-
+        let Some(slots) = slots.as_object() else { continue };
         let mut slots_map = FxHashMap::with_capacity_and_hasher(slots.len(), Default::default());
 
         for (slot, cost) in slots {
-            let cost = match cost.as_array() {
-                Some(c) => c,
-                None => continue,
-            };
+            let Some(cost) = cost.as_array() else { continue };
 
             let cost_list: Vec<String> = cost
                 .iter()

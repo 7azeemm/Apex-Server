@@ -6,11 +6,12 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::filter::LevelFilter;
 use crate::discord_logger::log_error;
 
-pub fn setup_logging() {
-    std::fs::create_dir_all("logs").ok();
+pub fn setup_logging(namespace: &str) {
+    let path = format!("logs/{namespace}");
+    std::fs::create_dir_all(&path).ok();
 
-    let app_file = RollingFileAppender::new(Rotation::DAILY, "logs", "app.log");
-    let error_file = RollingFileAppender::new(Rotation::DAILY, "logs", "error.log");
+    let app_file = RollingFileAppender::new(Rotation::DAILY, &path, "app.log");
+    let error_file = RollingFileAppender::new(Rotation::DAILY, &path, "error.log");
 
     let app_layer = fmt::layer()
         .with_writer(app_file)
@@ -37,7 +38,7 @@ pub fn setup_logging() {
         .with_writer(std::io::stdout);
 
     let env_filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("info"));
+        .unwrap_or_else(|_| EnvFilter::new("info,tantivy=warn"));
 
     tracing_subscriber::registry()
         .with(env_filter)

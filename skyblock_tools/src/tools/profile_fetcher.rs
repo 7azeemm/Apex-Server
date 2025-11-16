@@ -1,11 +1,7 @@
 use crate::constants::setups::SetupType;
-use crate::item_utils::{
-    decode_items, get_item_id, get_item_name, get_pet_level, get_pet_obj, get_pretty_name,
-};
+use crate::item_utils::{decode_items, get_item_id, get_item_name, get_pet_level, get_pet_obj, get_pretty_name};
 use crate::structs::item_structs::ItemNbt;
-use crate::structs::player_data_structs::{
-    Item, MuseumDonation, PlayerData, PlayerProfile, PlayerSetup, Storage, StringBuilder,
-};
+use crate::structs::player_data_structs::{Item, MuseumDonation, PlayerData, PlayerDataResponse, PlayerProfile, PlayerSetup, Storage, StringBuilder};
 use crate::utils::get_hypixel_api_key;
 use common::extensions::json_ext::JsonExt;
 use common::http::send_http_request;
@@ -18,6 +14,7 @@ use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::sync::RwLock;
 use tokio::time::{interval_at, Instant};
+use tracing::{error, info};
 
 const PROFILES_API_ENDPOINT: &str = "https://api.hypixel.net/v2/skyblock/profiles";
 const GARDEN_API_ENDPOINT: &str = "https://api.hypixel.net/v2/skyblock/garden";
@@ -49,12 +46,15 @@ pub fn profile_cleaner() {
                     player.remove_profile(&profile_id);
                 }
             }
-            println!("[Profile-Cleaner] Removed {} expired profiles", count);
+            
+            if count > 0 {
+                info!("[Profile-Cleaner] Removed {} expired profiles", count);
+            }
         }
     });
 }
 
-pub async fn get_player_profile(username: &str, player_uuid: &str, profile_name: Option<String>) -> Result<PlayerProfile, Box<dyn Error + Send + Sync>> {
+pub async fn get_player_profile(username: &str, player_uuid: &str, profile_name: Option<String>) -> Result<PlayerProfile, String> {
     let mut profile_name = profile_name;
 
     if let Some(player_data) = PLAYER_PROFILES.read().await.get(player_uuid).cloned() {
@@ -73,9 +73,16 @@ pub async fn get_player_profile(username: &str, player_uuid: &str, profile_name:
     }
 
     let url = format!("{PROFILES_API_ENDPOINT}?key={}&uuid={player_uuid}", get_hypixel_api_key());
-    let json = send_http_request(&url).await?;
+    let json = match send_http_request(&url).await {
+        Ok(json) => json,
+        Err(err) => {
+            error!(username, player_uuid, profile_name, "Failed to get skyblock data: {:?}", err);
+            return Err("Failed to get skyblock data".to_owned());
+        }
+    };
     if !json.get_bool("success").unwrap_or(false) {
-        return Err(format!("Couldn't fetch profiles of player {username}, uuid: {player_uuid}").into());
+        error!(username, player_uuid, profile_name, "Failed to get skyblock data");
+        return Err("Failed to get skyblock data".to_owned());
     }
 
     let profiles = json.get_array("profiles").ok_or("Player does not have any profiles")?;
@@ -115,13 +122,16 @@ pub async fn get_player_profile(username: &str, player_uuid: &str, profile_name:
         if let Some(parsed_profile) = parsed_profile {
             return Ok(player_data.add_profile(parsed_profile));
         }
-        return Err(format!("Couldn't parse profile of player {username}").into());
+        error!(username, player_uuid, profile_name, "Couldn't parse skyblock profile");
+        return Err("Failed to get player skyblock data".to_string());
     }
 
-    Err("Matching profile not found".into())
+    Err("No Matching profile found".into())
 }
 
-pub async fn get_garden_data(profile: &mut PlayerProfile) -> &Option<Value> {
+pub async fn get_garden_data(pdr: &mut PlayerDataResponse) -> &Option<Value> {
+    let context = pdr.context();
+    let profile = pdr.profile_mut();
     if profile.garden().is_some() {
         return profile.garden();
     }
@@ -130,23 +140,26 @@ pub async fn get_garden_data(profile: &mut PlayerProfile) -> &Option<Value> {
     match send_http_request(url).await {
         Ok(value) => match value.get_bool("success").unwrap_or(false) {
             true => profile.set_garden_data(value.get("garden").unwrap_or(&Value::default()).clone()),
-            false => eprintln!("Couldn't fetch garden data of profile {}", profile.id()),
+            false => error!(?context, "Failed to get garden data"),
         },
-        Err(err) => eprintln!("Err: {:?}", err),
+        Err(err) => error!(?context, "Failed to get garden data: {:?}", err),
     };
 
     profile.garden()
 }
 
-pub async fn get_museum_items<'a>(player_uuid: &str, profile: &'a mut PlayerProfile) -> &'a Option<Vec<MuseumDonation>> {
+pub async fn get_museum_items<'a>(player_uuid: &str, pdr: &'a mut PlayerDataResponse) -> &'a Option<Vec<MuseumDonation>> {
+    let context = pdr.context();
+    let profile = pdr.profile_mut();
     if profile.museum().is_some() {
         return profile.museum();
     }
 
     let url = &format!("{MUSEUM_API_ENDPOINT}?key={}&profile={}", get_hypixel_api_key(), profile.id());
     match send_http_request(url).await {
+        Err(err) => error!(?context, "Failed to get museum data: {:?}", err),
         Ok(value) => match value.get_bool("success").unwrap_or(false) {
-            false => eprintln!("Couldn't fetch museum data of profile {}", profile.id()),
+            false => error!(?context, "Failed to get museum data"),
             true => {
                 let undashed_player_uuid = player_uuid.replace("-", "");
                 if let Some(donations) = value.get_object(&format!("members/{undashed_player_uuid}/items")) {
@@ -165,8 +178,7 @@ pub async fn get_museum_items<'a>(player_uuid: &str, profile: &'a mut PlayerProf
                     profile.set_museum_data(donations_list);
                 }
             }
-        },
-        Err(err) => eprintln!("Err: {:?}", err),
+        }
     };
 
     profile.museum()

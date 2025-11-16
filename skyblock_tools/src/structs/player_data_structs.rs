@@ -6,23 +6,22 @@ use derive_new::new;
 use getset::Getters;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::error::Error;
 use std::time::Duration;
 use tokio::time::Instant;
 
 pub struct PlayerDataResponse {
     username: String,
-    profile_name: Option<String>,
     player_uuid: String,
+    profile_name: Option<String>,
     profile: PlayerProfile,
     sb: Option<StringBuilder>,
 }
 
 impl PlayerDataResponse {
-    pub async fn new(username: String, profile_name: Option<String>) -> Result<Self, Box<dyn Error + Send + Sync>> {
+    pub async fn new(username: String, profile_name: Option<String>) -> Result<Self, String> {
         let player_uuid = get_player_uuid(&username).await.ok_or("Couldn't get player_uuid")?;
         let profile = get_player_profile(&username, &player_uuid, profile_name.clone()).await?;
-        Ok(Self { username, profile_name, player_uuid, profile, sb: None })
+        Ok(Self { username, player_uuid, profile_name, profile, sb: None })
     }
     pub fn username(&self) -> &str {
         &self.username
@@ -44,6 +43,14 @@ impl PlayerDataResponse {
     }
     pub fn get_sb(&self) -> &Option<StringBuilder> {
         &self.sb
+    }
+
+    pub fn context(&self) -> Vec<(&'static str, String)> {
+        vec![
+            ("player_name", self.username.to_owned()),
+            ("player_uuid", self.player_uuid.to_owned()),
+            ("profile_name", self.profile_name.to_owned().unwrap_or("Default".to_string())),
+        ]
     }
 
     pub fn set_sb(&mut self, sb: StringBuilder) {

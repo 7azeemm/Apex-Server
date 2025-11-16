@@ -6,6 +6,7 @@ use serde_json::Value;
 use std::error::Error;
 use std::path::Path;
 use tokio::fs;
+use tracing::{error, info};
 
 pub async fn schedule() {
     neu_repo::schedule().await;
@@ -13,7 +14,7 @@ pub async fn schedule() {
 }
 
 fn auth_callbacks() -> RemoteCallbacks<'static> {
-    let token = std::env::var("GITHUB_TOKEN").expect("Github token is not set in .env file");
+    let token = std::env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN is not set");
 
     let mut callbacks = RemoteCallbacks::new();
     if !token.is_empty() {
@@ -34,14 +35,14 @@ pub async fn fetch_repo(repo: &Repo) -> bool {
     match result {
         Ok(updated) => updated,
         Err(err) => {
-            eprintln!("[{}-Repo] Operation failed: {err}", repo.name);
+            error!("[{}-Repo] Operation failed: {err}", repo.name);
             false
         }
     }
 }
 
 pub fn update(name: &str, branch: &str, path: &Path) -> Result<bool, git2::Error> {
-    println!("[{name}-Repo] Fetching...");
+    info!("[{name}-Repo] Fetching...");
     let repo = Repository::open(path)?;
 
     let mut fetch_opts = FetchOptions::new();
@@ -60,10 +61,10 @@ pub fn update(name: &str, branch: &str, path: &Path) -> Result<bool, git2::Error
         reference.set_target(fetch_commit.id(), "Fast-forward")?;
         repo.set_head(&ref_name)?;
         repo.checkout_head(Some(git2::build::CheckoutBuilder::default().force()))?;
-        println!("[{name}-Repo] Repository updated successfully.");
+        info!("[{name}-Repo] Repository updated successfully.");
         Ok(true)
     } else {
-        println!("[{name}-Repo] Repository is already up to date.");
+        info!("[{name}-Repo] Repository is already up to date.");
         Ok(false)
     }
 }
@@ -76,7 +77,7 @@ pub fn clone(name: &str, url: &str) -> Result<bool, git2::Error> {
     builder.fetch_options(fetch_opts);
 
     builder.clone(url, Path::new(&format!("{}_repo", name.to_lowercase())))?;
-    println!("[{name}-Repo] Clone completed successfully.");
+    info!("[{name}-Repo] Clone completed successfully.");
     Ok(true)
 }
 

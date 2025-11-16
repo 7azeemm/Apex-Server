@@ -10,6 +10,7 @@ use serde_json::Value;
 use std::error::Error;
 use std::pin::Pin;
 use std::time::Instant;
+use tracing::{error, info};
 
 pub const REPO_PATH: &str = "neu_repo";
 const REPO_URL: &str = "https://github.com/NotEnoughUpdates/NotEnoughUpdates-REPO.git";
@@ -37,8 +38,8 @@ pub async fn schedule() {
         for (name, func) in loaders {
             let start_time = Instant::now();
             match func.await {
-                Ok(()) => println!("[NEU-Repo/{name}] Loaded in {:.2?}", start_time.elapsed()),
-                Err(err) => eprintln!("[NEU-Repo/{name}] Failed to load, err: {err}"),
+                Ok(()) => info!("[NEU-Repo/{name}] Loaded in {:.2?}", start_time.elapsed()),
+                Err(err) => error!("[NEU-Repo/{name}] Failed to load, err: {err}"),
             }
         }
     }).await;

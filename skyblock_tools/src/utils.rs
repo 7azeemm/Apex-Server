@@ -1,7 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub fn get_hypixel_api_key() -> String {
-    std::env::var("HYPIXEL_API_KEY").expect("Hypixel API key is not set in .env file")
+    std::env::var("HYPIXEL_API_KEY").expect("HYPIXEL_API_KEY is not set")
 }
 
 pub fn get_time_as_secs() -> u64 {

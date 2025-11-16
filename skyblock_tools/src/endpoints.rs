@@ -80,7 +80,7 @@ pub async fn get_auction_by_auction_id(
             Ok(Json(response))
         }
         None => {
-            println!("couldn't find auction by auction id {auction_id}");
+            // println!("couldn't find auction by auction id {auction_id}");
             Err(StatusCode::NOT_FOUND)
         }
     }

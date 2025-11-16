@@ -5,13 +5,14 @@ use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::*;
 use tantivy::{doc, Index};
+use tracing::error;
 
 const TOP_N: usize = 5;
 static WIKI_SEARCHER: LazyLock<RwLock<Arc<WikiSearcher>>> = LazyLock::new(|| RwLock::new(Arc::new(WikiSearcher::new(Vec::new()).unwrap())));
 
 pub fn update_index(pages: Vec<WikiPage>) {
     match WikiSearcher::new(pages) {
-        Err(e) => println!("[WIKI-Repo] Error while building wiki index, {:?}", e),
+        Err(e) => error!("[WIKI-Repo] Error while building wiki index, {:?}", e),
         Ok(searcher) => {
             if let Ok(mut writer) = WIKI_SEARCHER.write() {
                 *writer = Arc::new(searcher);
@@ -114,10 +115,6 @@ impl WikiSearcher {
         results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         Ok(results)
     }
-}
-
-pub fn get_searcher() -> Arc<WikiSearcher> {
-    WIKI_SEARCHER.read().unwrap().clone()
 }
 
 pub async fn search_wiki(query: &str) -> Vec<(WikiPage, f32)> {

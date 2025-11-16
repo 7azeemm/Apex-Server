@@ -7,22 +7,21 @@ use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::sync::{Notify, RwLock};
 use tokio::time::{interval_at, Instant};
+use tracing::error;
 
 const CONTESTS_ENDPOINT: &str = "https://api.elitebot.dev/contests/at/now";
 const THRESHOLD: u64 = 300;
 
 static DATA_WAITER: Notify = Notify::const_new();
-static CONTESTS: LazyLock<RwLock<HashMap<String, Vec<String>>>> =
-    LazyLock::new(|| RwLock::new(HashMap::default()));
+static CONTESTS: LazyLock<RwLock<HashMap<String, Vec<String>>>> = LazyLock::new(|| RwLock::new(HashMap::default()));
 
 pub async fn schedule() {
     tokio::spawn(async {
         let mut ticker = interval_at(Instant::now(), Duration::from_secs(THRESHOLD));
         loop {
             ticker.tick().await;
-            match update_contests().await {
-                Ok(()) => println!("[Jacob-Contests] Next update in {} seconds", THRESHOLD),
-                Err(err) => eprintln!("[Jacob-Contests] Error: {:?}", err),
+            if let Err(err) = update_contests().await {
+                error!("[Jacob-Contests] Failed to update data: {:?}", err);
             }
             DATA_WAITER.notify_waiters()
         }

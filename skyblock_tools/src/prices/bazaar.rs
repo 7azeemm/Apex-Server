@@ -7,6 +7,7 @@ use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::sync::{Notify, RwLock};
 use tokio::time::{interval, interval_at, Instant};
+use tracing::{error, info};
 
 const API_ENDPOINT: &str = "https://api.hypixel.net/v2/skyblock/bazaar";
 const THRESHOLD: u64 = 70;
@@ -34,7 +35,7 @@ pub async fn schedule() {
                     DATA_WAITER.notify_waiters();
                 }
                 Err(err) => {
-                    eprintln!("[Bazaar] Error: {:?}", err);
+                    error!("[Bazaar] Failed to update bazaar items: {:?}", err);
                     ticker = interval_at(
                         Instant::now() + Duration::from_secs(MIN_DELAY_SECS),
                         Duration::from_secs(THRESHOLD),
@@ -47,12 +48,11 @@ pub async fn schedule() {
 }
 
 async fn update() -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
-    let start_time = Instant::now();
     let resp = send_raw_http_request(API_ENDPOINT).await?;
     let bazaar_response: BazaarResponse = serde_json::from_str(&resp)?;
 
     if !*bazaar_response.success() {
-        return Err("[Bazaar] API Request was unsuccessful".into());
+        return Err("API Request was unsuccessful".into());
     }
 
     let products = bazaar_response.products();
@@ -63,7 +63,6 @@ async fn update() -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
         bazaar.insert(id.clone(), PriceData::new(data.buy_price(), data.sell_price()));
     }
 
-    println!("[Bazaar] Updated {} items in {:.2?}.", products.len(), start_time.elapsed());
     Ok(last_updated)
 }
 

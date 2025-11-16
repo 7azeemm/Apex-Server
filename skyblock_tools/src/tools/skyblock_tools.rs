@@ -164,7 +164,7 @@ pub async fn get_garden_info(pdr: &mut PlayerDataResponse) {
     pdr.profile().add_setup_info(SetupType::Farming, &mut sb);
     sb.pushln();
 
-    if let Some(garden) = get_garden_data(pdr.profile_mut()).await {
+    if let Some(garden) = get_garden_data(pdr).await {
         if let Some(xp) = garden.get_f64("garden_experience") {
             let (_, level_info) = get_level_and_progress(GARDEN_LEVELS_XP, xp as u64, 1, MAX_GARDEN_LEVEL, None);
             sb.push(format!("Garden Level: {level_info}"));
@@ -659,7 +659,7 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse, detailed: bool) 
 
     let mut museum_value = 0;
     let player_uuid = pdr.player_uuid().to_string();
-    if let Some(museum_donations) = get_museum_items(&player_uuid, pdr.profile_mut()).await {
+    if let Some(museum_donations) = get_museum_items(&player_uuid, pdr).await {
         for donation in museum_donations.iter() {
             if *donation.borrowing() { continue; };
             for item in donation.items() {

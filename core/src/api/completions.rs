@@ -1,7 +1,6 @@
-use crate::endpoints::chats::{add_message, get_chat_or_create};
-use crate::structs::auth_structs::{ApiResponse, Session};
-use crate::structs::chat_structs::{Message, Sender};
-use crate::validated_json::ValidatedJson;
+use crate::api::chats::{add_message, get_chat_or_create};
+use crate::structs::chat::{Message, Sender};
+use crate::utils::validated_json::ValidatedJson;
 use axum::http::StatusCode;
 use axum::response::sse::Event;
 use axum::response::{Response, Sse};
@@ -15,6 +14,9 @@ use serde_json::{json, Value};
 use std::convert::Infallible;
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
+use tracing::{error, info};
+use crate::structs::api_structs::ApiResponse;
+use crate::structs::auth_structs::Session;
 
 const AI_SERVER_CHAT_ENDPOINT: &str = "http://127.0.0.1:8001/chat";
 const MAX_MESSAGES: usize = 10;
@@ -34,6 +36,7 @@ pub async fn completions_handler(
         let session = session.read().await;
         let user = session.user();
         if user.exceeded_limit() {
+            info!("{} reached token daily limit (daily_tokens: {})", user.player_name(), user.plan().daily_tokens());
             return Err(ApiResponse::err(
                 "Daily token limit reached",
                 StatusCode::PAYMENT_REQUIRED,
@@ -104,8 +107,8 @@ pub async fn completions_handler(
 
                     Ok(Event::default().data(text))
                 }
-                Err(err) => {
-                    eprintln!("Error while streaming: {err}");
+                Err(error) => {
+                    error!(?error, "Error while streaming");
                     Ok(Event::default())
                 }
             }
@@ -114,7 +117,7 @@ pub async fn completions_handler(
 
     let final_event = stream::once(async move {
         match usage_data.lock().await.take() {
-            None => eprintln!("Run usage is not available???"),
+            None => error!("Run usage is not found!!!"),
             Some(usage) => {
                 let collected_text = collected.lock().await.clone();
                 let response = Message::new(Sender::Assistant, collected_text);
@@ -126,7 +129,7 @@ pub async fn completions_handler(
             }
         }
 
-        Ok(Event::default().data("[DONE]"))
+        Ok(Event::default())
     });
 
     let stream = initial_event.chain(body_stream).chain(final_event);

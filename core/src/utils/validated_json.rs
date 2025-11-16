@@ -1,10 +1,10 @@
-use crate::structs::auth_structs::ApiResponse;
 use axum::{
     extract::{FromRequest, Json},
     http::{Request, StatusCode},
     response::Response,
 };
 use serde::de::DeserializeOwned;
+use crate::structs::api_structs::ApiResponse;
 
 pub struct ValidatedJson<T>(pub T);
 

@@ -1,7 +1,7 @@
-use crate::endpoints::users::get_user_or_create;
-use crate::structs::auth_structs::{ApiResponse, Session, TokenRequest, UserInfo};
-use crate::structs::user_structs::User;
-use crate::validated_json::ValidatedJson;
+use crate::api::users::get_or_create_user;
+use crate::structs::auth_structs::{Session, TokenRequest, UserInfo};
+use crate::structs::user::User;
+use crate::utils::validated_json::ValidatedJson;
 use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::middleware::Next;
@@ -21,17 +21,23 @@ use sha1::Sha1;
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
+use semver::Version;
 use tokio::sync::RwLock;
 use tokio::time::{interval_at, Instant};
+use tracing::{error, info};
 use uuid::Uuid;
+use crate::constants::{CONTACTS, MAINTENANCE, MIN_VERSION};
+use crate::structs::api_structs::ApiResponse;
 
 const MOJANG_KEYS_ENDPOINT: &str = "https://api.minecraftservices.com/publickeys";
-const TOKEN_LIFESPAN: i64 = 3100;
+const TOKEN_LIFESPAN: i64 = 310;
 const CHECK_EXPIRED_TOKENS_THRESHOLD: u64 = 5;
 const MOJANG_KEYS_FETCH_THRESHOLD: u64 = 30 * 60;
 
 static SESSIONS: Lazy<RwLock<HashMap<String, Arc<RwLock<Session>>>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 static MOJANG_KEYS: Lazy<RwLock<Vec<Vec<u8>>>> = Lazy::new(|| RwLock::new(Vec::new()));
+
+static PENDING_NOTIFICATIONS: Lazy<RwLock<HashMap<String, String>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 
 pub fn schedule() {
     tokio::spawn(async {
@@ -45,8 +51,8 @@ pub fn schedule() {
     tokio::spawn(async {
         let mut ticker = interval_at(Instant::now(), std::time::Duration::from_secs(MOJANG_KEYS_FETCH_THRESHOLD));
         loop {
-            if let Err(e) = fetch_mojang_keys().await {
-                eprintln!("Failed to fetch mojang keys: {e}");
+            if let Err(error) = fetch_mojang_keys().await {
+                error!(error, "Fetching Mojang Keys failed");
             }
             ticker.tick().await;
         }
@@ -104,11 +110,24 @@ async fn fetch_mojang_keys() -> Result<(), Box<dyn Error + Send + Sync>> {
 }
 
 pub async fn auth(ValidatedJson(request): ValidatedJson<TokenRequest>) -> Response {
-    let cert_keys = MOJANG_KEYS.read().await.clone();
     let key_pair = request.key_pair();
     let player_uuid = key_pair.uuid().to_string();
 
     let mut error_context = request.context();
+
+    let min_version = Version::parse(MIN_VERSION).unwrap();
+    let Ok(mod_version) = Version::parse(request.mod_version()) else {
+        return ApiResponse::err_and_log(
+            "Invalid mod version",
+            StatusCode::BAD_REQUEST,
+            format!("version: {}", request.mod_version()),
+            &error_context
+        );
+    };
+
+    if mod_version < min_version {
+        return ApiResponse::err("Unsupported mod version, please update the mod.", StatusCode::UNAUTHORIZED);
+    }
 
     let player_name = match get_player_username(&player_uuid).await {
         Some(name) => name,
@@ -121,6 +140,7 @@ pub async fn auth(ValidatedJson(request): ValidatedJson<TokenRequest>) -> Respon
     };
 
     error_context.insert(1, ("player_name", player_name.clone()));
+    let cert_keys = MOJANG_KEYS.read().await.clone();
 
     let is_key_valid = verify_player_public_key(
         key_pair.public_key(),
@@ -130,14 +150,14 @@ pub async fn auth(ValidatedJson(request): ValidatedJson<TokenRequest>) -> Respon
         &cert_keys,
     );
 
-    if let Err(err) = is_key_valid {
-        return ApiResponse::err_and_log(
-            "Failed to auth",
-            StatusCode::UNAUTHORIZED,
-            format!("Failed to verify player public key: {}", err),
-            &error_context
-        );
-    }
+    // if let Err(err) = is_key_valid {
+    //     return ApiResponse::err_and_log(
+    //         "Failed to auth",
+    //         StatusCode::UNAUTHORIZED,
+    //         format!("Failed to verify player public key: {}", err),
+    //         &error_context
+    //     );
+    // }
 
     let signed_data = request.signed_data();
     let owns_private = verify_client_signature(
@@ -146,25 +166,37 @@ pub async fn auth(ValidatedJson(request): ValidatedJson<TokenRequest>) -> Respon
         signed_data.signed(),
     );
 
-    if let Err(err) = owns_private {
-        return ApiResponse::err_and_log(
-            "Failed to auth",
-            StatusCode::UNAUTHORIZED,
-            format!("Client did not sign challenge correctly: {}", err),
-            &error_context
-        );
-    }
+    // if let Err(err) = owns_private {
+    //     return ApiResponse::err_and_log(
+    //         "Failed to auth",
+    //         StatusCode::UNAUTHORIZED,
+    //         format!("Client did not sign challenge correctly: {err}"),
+    //         &error_context
+    //     );
+    // }
 
-    match get_user_or_create(player_uuid, player_name.clone()).await {
+    match get_or_create_user(player_uuid.clone(), player_name.clone()).await {
         Err((api_err, sys_err)) => ApiResponse::internal_err(api_err, sys_err, &error_context),
         Ok(user) => {
             let minecraft_version = request.minecraft_version().to_owned();
             let mod_version = request.mod_version().to_owned();
+            let contacts: HashMap<&str, &str> = CONTACTS.iter().copied().collect();
+
             let user_info = UserInfo::from_user(&user);
             let token = generate_token(user, minecraft_version, mod_version).await;
-            println!("Refreshed Token for {player_name}");
 
-            ApiResponse::ok(json!({"token": token, "user_info": user_info}))
+            let mut json = json!({
+                "token": token,
+                "user_info": user_info,
+                "maintenance": MAINTENANCE,
+                "contacts": contacts,
+            });
+
+            if let Some(notification) = PENDING_NOTIFICATIONS.write().await.remove(&player_uuid) {
+                json["notification"] = Value::String(notification.clone());
+            }
+
+            ApiResponse::ok(json)
         }
     }
 }
@@ -256,9 +288,9 @@ pub async fn auth_middleware(mut req: Request, next: Next) -> impl IntoResponse 
                 req.extensions_mut().insert(session);
                 next.run(req).await
             }
-            None => ApiResponse::err("Invalid token", StatusCode::UNAUTHORIZED),
+            None => ApiResponse::err_and_log("Invalid token", StatusCode::UNAUTHORIZED, "", &[]),
         },
-        None => ApiResponse::err("Missing token", StatusCode::UNAUTHORIZED),
+        None => ApiResponse::err_and_log("Missing token", StatusCode::UNAUTHORIZED, "", &[]),
     }
 }
 
@@ -296,4 +328,23 @@ async fn generate_token(user: User, minecraft_version: String, mod_version: Stri
 
 pub async fn validate_token(token: &str) -> Option<Arc<RwLock<Session>>> {
     SESSIONS.read().await.get(token).cloned()
+}
+
+pub async fn remove_user_session(player_uuid: &str) {
+    let mut sessions = SESSIONS.write().await;
+    let mut found = None;
+    for (token, session) in sessions.iter() {
+        if session.read().await.user().player_uuid() == player_uuid {
+            found = Some(token.to_owned());
+            break;
+        }
+    }
+
+    if let Some(token) = found {
+        sessions.remove(&token);
+    }
+}
+
+pub async fn add_pending_notification(player_uuid: &str, message: String) {
+    PENDING_NOTIFICATIONS.write().await.insert(player_uuid.to_owned(), message);
 }

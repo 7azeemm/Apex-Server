@@ -3,6 +3,7 @@ use crate::http::send_http_request;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use tokio::sync::RwLock;
+use tracing::error;
 
 const NAME_TO_UUID_URL: &str = "https://api.mojang.com/users/profiles/minecraft";
 const UUID_TO_NAME_URL: &str = "https://api.minecraftservices.com/minecraft/profile/lookup";
@@ -24,8 +25,8 @@ pub async fn get_player_uuid(player_name: &str) -> Option<String> {
         Ok(Some(id)) => Some(id),
         _ => match send_http_request(&format!("{FALLBACK_URL}/{player_name}")).await {
             Ok(json) => json.get_str("data/player/id").map(|s| s.to_owned()),
-            Err(err) => {
-                eprintln!("Couldn't fetch player uuid from fallback method, err: {err}");
+            Err(error) => {
+                error!(error, "Player UUID fetch failed");
                 return None;
             }
         },
@@ -53,8 +54,8 @@ pub async fn get_player_username(player_uuid: &str) -> Option<String> {
         Ok(Some(username)) => Some(username),
         _ => match send_http_request(&format!("{FALLBACK_URL}/{player_uuid}")).await {
             Ok(json) => json.get_str("data/player/username").map(|s| s.to_owned()),
-            Err(err) => {
-                eprintln!("Couldn't fetch player name, err: {err}");
+            Err(error) => {
+                error!(error, "Player Username fetch failed");
                 return None;
             }
         },

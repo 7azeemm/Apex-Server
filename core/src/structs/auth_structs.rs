@@ -1,8 +1,4 @@
-use crate::structs::chat_structs::Chat;
-use crate::structs::user_structs::{Plan, User};
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
-use axum::Json;
+use crate::structs::chat::Chat;
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use chrono::Utc;
@@ -12,6 +8,8 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
 use uuid::Uuid;
+use crate::structs::plan::Plan;
+use crate::structs::user::User;
 
 fn from_base64_string<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
 where
@@ -60,81 +58,21 @@ impl TokenRequest {
     }
 }
 
-#[derive(Serialize)]
-pub struct ApiResponse<T>
-where
-    T: Serialize,
-{
-    #[serde(skip_serializing_if = "Option::is_none")]
-    error: Option<String>,
-    #[serde(flatten)]
-    payload: T,
-}
-
-impl<T: Serialize> ApiResponse<T> {
-    pub fn ok(payload: T) -> Response {
-        (
-            StatusCode::OK,
-            Json(ApiResponse {
-                error: None,
-                payload,
-            }),
-        ).into_response()
-    }
-}
-
-impl ApiResponse<()> {
-    fn log(msg: String, error: impl Display, context: &[(&str, String)]) {
-        eprintln!("Api error: {msg}, details: {error}");
-        for (k, v) in context {
-            eprintln!("  {k} = {v}");
-        }
-    }
-
-    pub fn internal_err(msg: impl Into<String> + Display, error: impl Display, context: &[(&str, String)]) -> Response {
-        Self::log(msg.to_string(), error, context);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiResponse {
-                error: Some(msg.into()),
-                payload: (),
-            }),
-        ).into_response()
-    }
-
-    pub fn err(msg: impl Into<String> + Display, status: StatusCode) -> Response {
-        (
-            status,
-            Json(ApiResponse {
-                error: Some(msg.into()),
-                payload: (),
-            }),
-        ).into_response()
-    }
-
-    pub fn err_and_log(msg: impl Into<String> + Display, status: StatusCode, error: impl Display, context: &[(&str, String)]) -> Response {
-        Self::log(msg.to_string(), error, context);
-        Self::err(msg, status)
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserInfo {
     plan: Plan,
-    plan_owned_at: i64,
-    plan_duration: Option<i64>,
-    daily_max_tokens: i64,
-    used_tokens_today: i64,
+    plan_color: i64,
+    daily_tokens: i64,
+    tokens_used_today: i64,
 }
 
 impl UserInfo {
     pub fn from_user(user: &User) -> Self {
         Self {
             plan: user.plan().clone(),
-            plan_owned_at: *user.plan_owned_at(),
-            plan_duration: user.plan().duration(),
-            daily_max_tokens: user.plan().daily_max_tokens(),
-            used_tokens_today: *user.used_tokens_today(),
+            plan_color: user.plan().color(),
+            daily_tokens: user.plan().daily_tokens(),
+            tokens_used_today: *user.tokens_used_today(),
         }
     }
 }
@@ -165,7 +103,7 @@ impl Session {
             ("player_uuid", self.user.player_uuid().to_owned()),
             ("player_name", self.user.player_name().to_owned()),
             ("plan", self.user.plan().to_string()),
-            ("used_tokens_today", self.user.used_tokens_today().to_string()),
+            ("tokens_used_today", self.user.tokens_used_today().to_string()),
             ("minecraft_version", self.minecraft_version().to_owned()),
             ("mod_version", self.mod_version().to_owned()),
         ]

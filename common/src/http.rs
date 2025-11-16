@@ -8,7 +8,7 @@ pub static HTTP_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
         .connect_timeout(Duration::from_secs(15))
         .gzip(true)
         .build()
-        .expect("Failed to build http client")
+        .expect("Failed to build HTTP client")
 });
 
 pub async fn send_raw_http_request(url: &str) -> Result<String, Box<dyn Error + Send + Sync>> {

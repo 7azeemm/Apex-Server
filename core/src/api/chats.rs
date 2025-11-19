@@ -45,13 +45,13 @@ pub async fn get_chats(Extension(session): Extension<Arc<RwLock<Session>>>) -> R
     ApiResponse::ok(json!({"chats": chats}))
 }
 
-pub async fn create_chat(session: &Arc<RwLock<Session>>, message: Message) -> Result<Chat, Response> {
+pub async fn create_chat(session: &Arc<RwLock<Session>>, prompt: &str) -> Result<Chat, Response> {
     let pool = get_db_pool();
     let current_time = Utc::now().timestamp();
     let chat_uuid = Uuid::new_v4().to_string();
     let player_uuid = session.read().await.user().player_uuid().clone();
-    let chat_name = message.content().split_whitespace().take(4).collect::<Vec<&str>>().join(" ");
-    let messages = vec![message];
+    let chat_name = prompt.split_whitespace().take(4).collect::<Vec<&str>>().join(" ");
+    let messages = vec![];
     let tokens = 0;
 
     match sqlx::query!(
@@ -63,7 +63,7 @@ pub async fn create_chat(session: &Arc<RwLock<Session>>, message: Message) -> Re
         tokens, current_time, current_time
     ).execute(pool).await {
         Ok(_) => {
-            let chat = Chat::new(chat_uuid.clone(), chat_name.to_owned(), messages, tokens, current_time, current_time);
+            let chat = Chat::new(chat_uuid.clone(), chat_name.to_owned(), messages, 0, current_time, current_time);
             let mut session = session.write().await;
             session.chats_mut().insert(chat_uuid, chat.clone());
             Ok(chat)
@@ -123,26 +123,30 @@ async fn fetch_chat(pool: &PgPool, session: &Arc<RwLock<Session>>, chat_uuid: &s
     Ok(chat)
 }
 
-pub async fn get_chat_or_create(session: &Arc<RwLock<Session>>, chat_uuid: String, message: Message, retry: bool) -> Result<Chat, Response> {
+pub async fn get_chat_or_create(session: &Arc<RwLock<Session>>, chat_uuid: String, prompt: &str, retry: bool) -> Result<Chat, Response> {
     match chat_uuid == "new" {
-        true => create_chat(session, message).await,
+        true => create_chat(session, prompt).await,
         false => {
             let chat = fetch_chat(get_db_pool(), session, &chat_uuid).await?;
             match retry {
-                true => remove_last_message(session, &chat).await,
-                false => add_message(session, &chat, message, 0).await,
+                true => remove_last_round(session, &chat).await,
+                false => Ok(chat),
             }
         }
     }
 }
 
-pub async fn add_message(session: &Arc<RwLock<Session>>, chat: &Chat, message: Message, tokens: i64) -> Result<Chat, Response> {
+pub async fn add_messages(session: &Arc<RwLock<Session>>, chat: &Chat, messages: Vec<Message>) -> Result<Chat, Response> {
     let player_uuid = session.read().await.user().player_uuid().to_owned();
 
     let mut chat = chat.clone();
     let chat_uuid = chat.uuid().to_owned();
-    chat.add_message(message.clone(), tokens);
-    let new_message = serde_json::to_value(vec![message]).unwrap();
+    let messages_json = serde_json::to_value(messages.clone()).unwrap();
+    let mut tokens = 0;
+    for message in messages {
+        tokens += message.tokens();
+        chat.add_message(message);
+    }
 
     match sqlx::query!(
         r#"
@@ -152,14 +156,12 @@ pub async fn add_message(session: &Arc<RwLock<Session>>, chat: &Chat, message: M
             updated_at = $3
         WHERE id = $4 AND player_uuid = $5
         "#,
-        new_message, chat.token_usage(), chat.updated_at(),
+        messages_json, chat.token_usage(), chat.updated_at(),
         chat_uuid, player_uuid
     ).execute(get_db_pool()).await {
-        Err(e) => Err(chat_err_resp(session, &chat_uuid, "Failed to add message", &e.to_string(), false).await),
+        Err(e) => Err(chat_err_resp(session, &chat_uuid, "Failed to add messages", &e.to_string(), false).await),
         Ok(_) => {
-            if tokens > 0 {
-                update_user_token_usage(session, tokens).await
-            }
+            update_user_token_usage(session, tokens).await;
             let mut session = session.write().await;
             session.chats_mut().insert(chat_uuid, chat.clone());
             Ok(chat)
@@ -167,15 +169,15 @@ pub async fn add_message(session: &Arc<RwLock<Session>>, chat: &Chat, message: M
     }
 }
 
-pub async fn remove_last_message(session: &Arc<RwLock<Session>>, chat: &Chat) -> Result<Chat, Response> {
-    let messages = chat.messages();
+pub async fn remove_last_round(session: &Arc<RwLock<Session>>, chat: &Chat) -> Result<Chat, Response> {
+    let messages_len = chat.messages().len();
 
-    if messages.is_empty() {
+    if messages_len < 2 {
         let error_context = session.read().await.context();
         return Err(ApiResponse::err_and_log(
             "No messages to remove",
             StatusCode::BAD_REQUEST,
-            "Chat has no messages",
+            format!("Chat has {messages_len} message"),
             &error_context,
         ));
     }
@@ -186,16 +188,16 @@ pub async fn remove_last_message(session: &Arc<RwLock<Session>>, chat: &Chat) ->
     match sqlx::query!(
         r#"
         UPDATE chats
-        SET messages = messages - -1,
+        SET messages = messages - -2,
             updated_at = $1
         WHERE id = $2 AND player_uuid = $3
         "#,
         Utc::now().timestamp(), chat_uuid, player_uuid
     ).execute(get_db_pool()).await {
-        Err(e) => Err(chat_err_resp(session, chat_uuid, "Failed to remove last message", &e.to_string(), false).await),
+        Err(e) => Err(chat_err_resp(session, chat_uuid, "Failed to remove last two messages", &e.to_string(), false).await),
         Ok(_) => {
             let mut chat = chat.clone();
-            chat.remove_last_message();
+            chat.remove_last_round();
             let mut session = session.write().await;
             session.chats_mut().insert(chat_uuid.to_owned(), chat.clone());
             Ok(chat)

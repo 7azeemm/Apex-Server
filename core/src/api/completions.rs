@@ -1,4 +1,5 @@
-use crate::api::chats::{add_message, get_chat_or_create};
+use std::collections::VecDeque;
+use crate::api::chats::{add_messages, get_chat_or_create};
 use crate::structs::chat::{Message, Sender};
 use crate::utils::validated_json::ValidatedJson;
 use axum::http::StatusCode;
@@ -9,17 +10,21 @@ use common::extensions::json_ext::JsonExt;
 use futures::StreamExt;
 use futures::{stream, Stream};
 use reqwest::Client;
-use serde::Deserialize;
-use serde_json::{json, Value};
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Number, Value};
 use std::convert::Infallible;
 use std::sync::Arc;
-use tokio::sync::{Mutex, RwLock};
+use std::time::Duration;
+use tokio::sync::{mpsc, Mutex, RwLock};
+use tokio::time::{sleep, Instant};
 use tracing::{error, info};
+use common::http::HTTP_CLIENT;
 use crate::structs::api_structs::ApiResponse;
 use crate::structs::auth_structs::Session;
+use crate::structs::plan::Plan;
 
 const AI_SERVER_CHAT_ENDPOINT: &str = "http://127.0.0.1:8001/chat";
-const MAX_MESSAGES: usize = 10;
+const MAX_PROMPT_CHARS: usize = 4000;
 
 #[derive(Debug, Deserialize)]
 pub struct CompletionsRequest {
@@ -28,11 +33,27 @@ pub struct CompletionsRequest {
     retry: Option<bool>,
 }
 
+enum StreamItem {
+    Token(String),
+    Usage(Value),
+}
+
 pub async fn completions_handler(
     Extension(session): Extension<Arc<RwLock<Session>>>,
     ValidatedJson(request): ValidatedJson<CompletionsRequest>,
 ) -> Result<Sse<impl Stream<Item=Result<Event, Infallible>>>, Response> {
-    {
+    let chat_uuid = request.chat_uuid;
+    let prompt = request.prompt;
+    let retry = request.retry.unwrap_or(false);
+
+    if prompt.len() > MAX_PROMPT_CHARS {
+        return Err(ApiResponse::err_and_log(
+            &format!("Prompt is too long! Maximum {} characters allowed.", MAX_PROMPT_CHARS),
+            StatusCode::BAD_REQUEST, "", &[]
+        ));
+    }
+
+    let plan = {
         let session = session.read().await;
         let user = session.user();
         if user.exceeded_limit() {
@@ -42,97 +63,130 @@ pub async fn completions_handler(
                 StatusCode::PAYMENT_REQUIRED,
             ));
         }
-    }
+        user.plan().clone()
+    };
 
-    let chat_uuid = request.chat_uuid;
-    let prompt = request.prompt;
-    let message = Message::new(Sender::User, prompt.clone());
-
-    let chat = get_chat_or_create(&session, chat_uuid, message, request.retry.unwrap_or(false)).await?;
+    let chat = get_chat_or_create(&session, chat_uuid, &prompt, retry).await?;
     let chat_uuid = chat.uuid().to_owned();
     let chat_name = chat.name().to_owned();
 
-    let total_messages = chat.messages().len();
-    let start = total_messages.saturating_sub(MAX_MESSAGES);
-    let recent_messages = &chat.messages()[start..];
+    let context_window = plan.context_window();
+    let mut messages_json = build_context_messages(chat.messages(), &prompt, context_window);
 
-    let mut messages_json = vec![json!({"role": "system", "content": "You are a helpful assistant."})];
-
-    messages_json.extend(recent_messages.iter().map(|msg| {
-        let role = match msg.sender() {
-            Sender::User => "user",
-            Sender::Assistant => "assistant",
-        };
-        json!({"role": role, "content": msg.content()})
-    }));
-
-    let client = Client::new();
-    let response = client
+    let response = HTTP_CLIENT
         .post(AI_SERVER_CHAT_ENDPOINT)
-        .json(&json!({ "messages": messages_json }))
+        .json(&json!({"messages": messages_json}))
         .send()
         .await
         .map_err(|e| {
-            ApiResponse::internal_err("Failed to connect to the LLM".to_string(), e, &[])
+            ApiResponse::internal_err("Failed to connect to the AI Model".to_string(), e, &[])
         })?;
 
-    let initial_event = stream::once(async move {
-        let data = json!({"chat_info": {"uuid": chat_uuid, "name": chat_name}}).to_string();
-        Ok::<Event, Infallible>(Event::default().data(data))
-    });
+    let start_time = Instant::now();
+    let (tx, rx) = mpsc::channel::<StreamItem>(200);
 
-    let usage_data = Arc::new(Mutex::new(None::<Value>));
-    let collected = Arc::new(Mutex::new(String::new()));
+    tokio::spawn(async move {
+        let mut stream = response.bytes_stream();
+        let mut full_accumulated_text = String::new();
 
-    let usage_ref = usage_data.clone();
-    let collected_ref = collected.clone();
-
-    let body_stream = response.bytes_stream().then(move |chunk| {
-        let usage_ref = usage_ref.clone();
-        let collected_ref = collected_ref.clone();
-
-        async move {
-            match chunk {
+        while let Some(chunk_res) = stream.next().await {
+            match chunk_res {
+                Err(e) => error!(?e, "Streaming Error"),
                 Ok(bytes) => {
-                    let text = String::from_utf8_lossy(&bytes).to_string();
+                    let text = String::from_utf8_lossy(&bytes);
+                    match serde_json::from_str::<Value>(&text) {
+                        Err(err) => error!(?err, "Failed to decode chunk from AI server"),
+                        Ok(json) => {
+                            if let Some(usage) = json.get("usage") {
+                                let _ = tx.send(StreamItem::Usage(json.clone())).await;
 
-                    if let Ok(json) = serde_json::from_str::<Value>(&text) {
-                        if json.get("usage").is_some() {
-                            *usage_ref.lock().await = Some(json);
-                        } else {
-                            let content = json.get_str("completions/content");
-                            collected_ref.lock().await.push_str(content.unwrap_or_default());
+                                let prompt_tokens = usage.get_i64("prompt_tokens").unwrap_or(0);
+                                let completion_tokens = usage.get_i64("completion_tokens").unwrap_or(0);
+                                let prompt = Message::new(Sender::User, prompt, prompt_tokens);
+                                let response = Message::new(Sender::Assistant, full_accumulated_text, completion_tokens);
+                                let _ = add_messages(&session, &chat, vec![prompt, response]).await;
+                                break;
+                            } else {
+                                let content = json.get_str("completions/content").unwrap_or_default();
+                                full_accumulated_text.push_str(content);
+
+                                let pieces: Vec<String> = content.split_inclusive(char::is_whitespace)
+                                    .map(|s| s.to_string())
+                                    .collect();
+
+                                for piece in pieces {
+                                    let _ = tx.send(StreamItem::Token(piece)).await;
+                                }
+                            }
                         }
                     }
-
-                    Ok(Event::default().data(text))
-                }
-                Err(error) => {
-                    error!(?error, "Error while streaming");
-                    Ok(Event::default())
                 }
             }
         }
     });
 
-    let final_event = stream::once(async move {
-        match usage_data.lock().await.take() {
-            None => error!("Run usage is not found!!!"),
-            Some(usage) => {
-                let collected_text = collected.lock().await.clone();
-                let response = Message::new(Sender::Assistant, collected_text);
-                let usage = usage.get("usage").unwrap_or_default();
-                let prompt_tokens = usage.get_u64("prompt_tokens").unwrap_or_default();
-                let completion_tokens = usage.get_u64("completion_tokens").unwrap_or_default();
-                let total_tokens = prompt_tokens + completion_tokens;
-                let _ = add_message(&session, &chat, response, total_tokens as i64).await;
-            }
-        }
+    let response_speed = plan.response_speed();
+    let interval = Duration::from_secs_f32(1.0 / response_speed as f32);
 
-        Ok(Event::default())
+    let initial_data = json!({"chat_info": {"uuid": chat_uuid, "name": chat_name}}).to_string();
+    let initial_event = stream::once(async move { Ok(Event::default().data(initial_data)) });
+
+    let body_stream = stream::unfold(rx, move |mut rx| async move {
+        match rx.recv().await {
+            Some(StreamItem::Token(word)) => {
+                tokio::time::sleep(interval).await;
+                let json_data = json!({"completions": {"content": word}}).to_string();
+                Some((Ok(Event::default().data(json_data)), rx))
+            },
+            Some(StreamItem::Usage(mut usage_json)) => {
+                let duration = start_time.elapsed();
+                usage_json["usage"]["latency_ms"] = Value::from(duration.as_millis() as u64);
+                let json_data = usage_json.to_string();
+                Some((Ok(Event::default().data(json_data)), rx))
+            },
+            None => None,
+        }
     });
 
-    let stream = initial_event.chain(body_stream).chain(final_event);
+    Ok(Sse::new(initial_event.chain(body_stream)))
+}
 
-    Ok(Sse::new(stream))
+pub fn build_context_messages(chat_messages: &[Message], user_prompt: &str, context_window: i64) -> Vec<Value> {
+    let mut messages = vec![];
+
+    messages.push(json!({
+        "role": "system",
+        "content": "You are a helpful assistant."
+    }));
+
+    let mut history_tokens: i64 = 0;
+    let mut history: Vec<&Message> = vec![];
+    for msg in chat_messages.iter().rev() {
+        let msg_tokens = *msg.tokens();
+
+        if history_tokens + msg_tokens > context_window {
+            break;
+        }
+
+        history_tokens += msg_tokens;
+        history.push(msg);
+    }
+
+    history.reverse();
+
+    for msg in history {
+        messages.push(json!({
+            "role": msg.sender(),
+            "content": msg.content()
+        }));
+    }
+
+    messages.push(json!({
+        "role": Sender::User,
+        "content": user_prompt
+    }));
+
+    println!("{messages:#?}");
+
+    messages
 }

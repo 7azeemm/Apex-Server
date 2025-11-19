@@ -18,55 +18,18 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="...">
+    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="Logging is Done :D">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/src/extensions/fastnbt_ext.rs" beforeDir="false" afterPath="$PROJECT_DIR$/common/src/extensions/fastnbt_ext.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/src/extensions/json_ext.rs" beforeDir="false" afterPath="$PROJECT_DIR$/common/src/extensions/json_ext.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/src/logger.rs" beforeDir="false" afterPath="$PROJECT_DIR$/common/src/logger.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/core/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/api/auth.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/auth.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/src/api/chats.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/chats.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/api/completions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/completions.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/constants.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/constants.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/src/structs/auth_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/structs/auth_structs.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/src/structs/chat.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/structs/chat.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/structs/plan.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/structs/plan.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/src/utils/database.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/utils/database.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/utils/validated_json.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/utils/validated_json.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/constants/enchantments.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/constants/enchantments.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/constants/garden.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/constants/garden.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/constants/misc.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/constants/misc.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/constants/pets.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/constants/pets.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/constants/setups.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/constants/setups.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/constants/skills.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/constants/skills.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/endpoints.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/endpoints.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/helpers/accessory_helper.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/helpers/accessory_helper.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/helpers/museum_helper.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/helpers/museum_helper.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/live_data/jacob_contests.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/live_data/jacob_contests.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/live_data/mayor_info.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/live_data/mayor_info.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/prices/auctions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/prices/auctions.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/prices/bazaar.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/prices/bazaar.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/prices/cosmetic_prices.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/prices/cosmetic_prices.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/prices/item_value_calculator.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/prices/item_value_calculator.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/essence_costs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/essence_costs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/gemstone_slots_cost.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/gemstone_slots_cost.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/items.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/items.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/museum_donations.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/museum_donations.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/neu_repo.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/neu_repo.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/reforge_stones.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/reforge_stones.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/talisman_upgrades.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/talisman_upgrades.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/repo_manager.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/repo_manager.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/wiki/wiki_repo.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/wiki/wiki_repo.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/wiki/wiki_searcher.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/wiki/wiki_searcher.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/structs/auctions_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/structs/auctions_structs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/structs/bazaar_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/structs/bazaar_structs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/structs/item_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/structs/item_structs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/structs/mayor_info_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/structs/mayor_info_structs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/structs/player_data_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/structs/player_data_structs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/structs/repo_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/structs/repo_structs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/structs/value_calc_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/structs/value_calc_structs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/structs/wiki_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/structs/wiki_structs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/tools/hypixel_tools.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/tools/hypixel_tools.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/tools/profile_fetcher.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/tools/profile_fetcher.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/tools/skyblock_tools.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/tools/skyblock_tools.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/utils.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/utils.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -115,35 +78,35 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "Cargo.Run core.executor": "Run",
-    "Cargo.Run skyblock_tools.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.rust.reset.selective.auto.import": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
-    "org.rust.first.attach.projects": "true",
-    "settings.editor.selected.configurable": "language.rust.cargo.check"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;Cargo.Run core.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Run skyblock_tools.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
+    &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
+    &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;language.rust.cargo.check&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\RustroverProjects\SkyBlock-Mod-Backend\core\src\utils" />
       <recent name="D:\RustroverProjects\SkyBlock-Mod-Backend\common\src" />
     </key>
   </component>
-  <component name="RunManager" selected="Cargo.Run skyblock_tools">
+  <component name="RunManager" selected="Cargo.Run core">
     <configuration name="Run core" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="run --package core --bin core" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -212,7 +175,10 @@
       <workItem from="1763130243765" duration="6306000" />
       <workItem from="1763187243640" duration="26273000" />
       <workItem from="1763276682612" duration="2311000" />
-      <workItem from="1763279435414" duration="16056000" />
+      <workItem from="1763279435414" duration="17071000" />
+      <workItem from="1763446022043" duration="23550000" />
+      <workItem from="1763537439205" duration="16489000" />
+      <workItem from="1763575115280" duration="4381000" />
     </task>
     <task id="LOCAL-00001" summary="Surprise">
       <option name="closed" value="true" />
@@ -246,7 +212,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763289959124</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Logging is Done :D">
+      <option name="closed" value="true" />
+      <created>1763297636766</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1763297636766</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -271,7 +245,8 @@
     <MESSAGE value="Logger" />
     <MESSAGE value="MORE" />
     <MESSAGE value="..." />
-    <option name="LAST_COMMIT_MESSAGE" value="..." />
+    <MESSAGE value="Logging is Done :D" />
+    <option name="LAST_COMMIT_MESSAGE" value="Logging is Done :D" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

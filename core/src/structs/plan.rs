@@ -7,23 +7,18 @@ use crate::constants::PLAN_CONFIGS;
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum Plan {
     Free,
-    Plus,
     Pro,
+    Ultimate,
 }
 
 #[derive(new)]
 pub struct PlanConfig {
     pub plan: Plan,
     pub daily_tokens: i64,
+    pub context_window: i64,
     pub duration: Option<i64>,
-    pub color: i64
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, new)]
-pub struct ExpiredPlan {
-    plan: Plan,
-    started_at: i64,
-    ended_at: i64,
+    pub color: i64,
+    pub response_speed: u64
 }
 
 impl Plan {
@@ -38,12 +33,20 @@ impl Plan {
         self.config().daily_tokens
     }
 
+    pub fn context_window(&self) -> i64 {
+        self.config().context_window
+    }
+
     pub fn duration(&self) -> Option<i64> {
         self.config().duration
     }
 
     pub fn color(&self) -> i64 {
         self.config().color
+    }
+
+    pub fn response_speed(&self) -> u64 {
+        self.config().response_speed
     }
 }
 
@@ -63,4 +66,11 @@ impl FromStr for Plan {
             .map(|config| config.plan)
             .ok_or(())
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, new)]
+pub struct ExpiredPlan {
+    plan: Plan,
+    started_at: i64,
+    ended_at: i64,
 }

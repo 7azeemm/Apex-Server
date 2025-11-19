@@ -15,13 +15,14 @@ pub struct Chat {
 }
 
 impl Chat {
-    pub fn add_message(&mut self, message: Message, tokens: i64) {
-        self.token_usage += tokens;
+    pub fn add_message(&mut self, message: Message) {
+        self.token_usage += *message.tokens();
         self.messages.push(message);
         self.updated_at = Utc::now().timestamp();
     }
 
-    pub fn remove_last_message(&mut self) {
+    pub fn remove_last_round(&mut self) {
+        self.messages.pop();
         self.messages.pop();
     }
 }
@@ -31,9 +32,11 @@ impl Chat {
 pub struct Message {
     sender: Sender,
     content: String,
+    tokens: i64
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Sender {
     User,
     Assistant,

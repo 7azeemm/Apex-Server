@@ -120,8 +120,7 @@ pub async fn auth(ValidatedJson(request): ValidatedJson<TokenRequest>) -> Respon
         return ApiResponse::err_and_log(
             "Invalid mod version",
             StatusCode::BAD_REQUEST,
-            format!("version: {}", request.mod_version()),
-            &error_context
+            "", &error_context
         );
     };
 

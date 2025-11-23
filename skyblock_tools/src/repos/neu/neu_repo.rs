@@ -39,7 +39,7 @@ pub async fn schedule() {
             let start_time = Instant::now();
             match func.await {
                 Ok(()) => info!("[NEU-Repo/{name}] Loaded in {:.2?}", start_time.elapsed()),
-                Err(err) => error!("[NEU-Repo/{name}] Failed to load, err: {err}"),
+                Err(err) => error!(?err, "[NEU-Repo/{name}] Failed to load"),
             }
         }
     }).await;

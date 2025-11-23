@@ -47,8 +47,7 @@ impl Talisman {
     }
 }
 
-pub async fn get_missing_accessories(pdr: &mut PlayerDataResponse, page: u64, soulbound: bool) {
-    let mut sb = StringBuilder::new();
+pub async fn get_accessory_upgrades(pdr: &PlayerDataResponse, sb: &mut StringBuilder, page: u64, soulbound: bool) {
     let player_talismans: HashMap<String, Talisman> = pdr
         .profile()
         .storage()
@@ -289,8 +288,6 @@ pub async fn get_missing_accessories(pdr: &mut PlayerDataResponse, page: u64, so
         sb.push("- Net Cost = Accessory Price - Previous Tier Price.".to_string());
         sb.push("- Some accessories may have multiple upgrade tiers not shown on this page.".to_string());
     }
-
-    pdr.set_sb(sb);
 }
 
 fn get_magical_power(talisman: &Talisman, with_recomb: bool) -> u64 {

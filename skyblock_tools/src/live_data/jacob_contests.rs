@@ -21,7 +21,7 @@ pub async fn schedule() {
         loop {
             ticker.tick().await;
             if let Err(err) = update_contests().await {
-                error!("[Jacob-Contests] Failed to update data: {:?}", err);
+                error!(?err, "[Jacob-Contests] Failed to update data");
             }
             DATA_WAITER.notify_waiters()
         }

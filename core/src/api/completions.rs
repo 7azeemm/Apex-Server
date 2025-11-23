@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
-use crate::api::chats::{add_messages, get_chat_or_create};
-use crate::structs::chat::{Message, Sender};
+use crate::api::chats::{update_chat, get_chat_or_create};
+use crate::structs::chat::{Message, Sender, ToolExecution};
 use crate::utils::validated_json::ValidatedJson;
 use axum::http::StatusCode;
 use axum::response::sse::Event;
@@ -19,6 +19,7 @@ use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::{sleep, Instant};
 use tracing::{error, info};
 use common::http::HTTP_CLIENT;
+use crate::constants::CACHED_INPUT_TOKENS_RATE;
 use crate::structs::api_structs::ApiResponse;
 use crate::structs::auth_structs::Session;
 use crate::structs::plan::Plan;
@@ -87,7 +88,8 @@ pub async fn completions_handler(
 
     tokio::spawn(async move {
         let mut stream = response.bytes_stream();
-        let mut full_accumulated_text = String::new();
+        let mut full_text = String::new();
+        let mut tools_data = None;
 
         while let Some(chunk_res) = stream.next().await {
             match chunk_res {
@@ -96,19 +98,9 @@ pub async fn completions_handler(
                     let text = String::from_utf8_lossy(&bytes);
                     match serde_json::from_str::<Value>(&text) {
                         Err(err) => error!(?err, "Failed to decode chunk from AI server"),
-                        Ok(json) => {
-                            if let Some(usage) = json.get("usage") {
-                                let _ = tx.send(StreamItem::Usage(json.clone())).await;
-
-                                let prompt_tokens = usage.get_i64("prompt_tokens").unwrap_or(0);
-                                let completion_tokens = usage.get_i64("completion_tokens").unwrap_or(0);
-                                let prompt = Message::new(Sender::User, prompt, prompt_tokens);
-                                let response = Message::new(Sender::Assistant, full_accumulated_text, completion_tokens);
-                                let _ = add_messages(&session, &chat, vec![prompt, response]).await;
-                                break;
-                            } else {
-                                let content = json.get_str("completions/content").unwrap_or_default();
-                                full_accumulated_text.push_str(content);
+                        Ok(mut json) => {
+                            if let Some(content) = json.get_str("completions/content") {
+                                full_text.push_str(content);
 
                                 let pieces: Vec<String> = content.split_inclusive(char::is_whitespace)
                                     .map(|s| s.to_string())
@@ -117,7 +109,27 @@ pub async fn completions_handler(
                                 for piece in pieces {
                                     let _ = tx.send(StreamItem::Token(piece)).await;
                                 }
-                            }
+                            } else if let Some(usage) = json.get("usage") {
+                                let prompt_tokens = usage.get_i64("prompt_tokens").unwrap_or(0);
+                                let input_tokens = usage.get_i64("input_tokens").unwrap_or(0);
+                                let output_tokens = usage.get_i64("output_tokens").unwrap_or(0);
+                                let cached_input_tokens = usage.get_i64("cached_input_tokens").unwrap_or(0);
+                                let tokens_usage = input_tokens + output_tokens + (cached_input_tokens as f32 * CACHED_INPUT_TOKENS_RATE) as i64;
+
+                                json["usage"]["tokens_usage"] = Value::from(tokens_usage);
+                                let _ = tx.send(StreamItem::Usage(json)).await;
+
+                                let prompt = Message::new(Sender::User, prompt, None, prompt_tokens);
+                                let response = Message::new(Sender::Assistant, full_text, tools_data, output_tokens);
+
+                                update_chat(&session, &chat, vec![prompt, response], tokens_usage).await;
+                                break;
+                            } else if let Some(tools) = json.get("tools") {
+                                match serde_json::from_value::<Vec<ToolExecution>>(tools.clone()) {
+                                    Ok(tools) => tools_data = Some(tools),
+                                    Err(err) => error!(?err, "Failed to serialize tools")
+                                }
+                            } else { error!(?json, "Received unexpected data from AI Server") }
                         }
                     }
                 }
@@ -131,16 +143,24 @@ pub async fn completions_handler(
     let initial_data = json!({"chat_info": {"uuid": chat_uuid, "name": chat_name}}).to_string();
     let initial_event = stream::once(async move { Ok(Event::default().data(initial_data)) });
 
+    let mut first_token_time = None;
+
     let body_stream = stream::unfold(rx, move |mut rx| async move {
         match rx.recv().await {
             Some(StreamItem::Token(word)) => {
                 tokio::time::sleep(interval).await;
+
+                if first_token_time.is_none() {
+                    first_token_time = Some(Instant::now());
+                }
+
                 let json_data = json!({"completions": {"content": word}}).to_string();
                 Some((Ok(Event::default().data(json_data)), rx))
             },
             Some(StreamItem::Usage(mut usage_json)) => {
-                let duration = start_time.elapsed();
+                let duration = first_token_time.unwrap_or(start_time).elapsed();
                 usage_json["usage"]["latency_ms"] = Value::from(duration.as_millis() as u64);
+
                 let json_data = usage_json.to_string();
                 Some((Ok(Event::default().data(json_data)), rx))
             },
@@ -152,15 +172,9 @@ pub async fn completions_handler(
 }
 
 pub fn build_context_messages(chat_messages: &[Message], user_prompt: &str, context_window: i64) -> Vec<Value> {
-    let mut messages = vec![];
-
-    messages.push(json!({
-        "role": "system",
-        "content": "You are a helpful assistant."
-    }));
-
-    let mut history_tokens: i64 = 0;
     let mut history: Vec<&Message> = vec![];
+    let mut history_tokens: i64 = 0;
+
     for msg in chat_messages.iter().rev() {
         let msg_tokens = *msg.tokens();
 
@@ -174,19 +188,21 @@ pub fn build_context_messages(chat_messages: &[Message], user_prompt: &str, cont
 
     history.reverse();
 
+    let mut messages = vec![];
+
+    messages.push(json!({
+        "role": "system",
+        "content": "You are a helpful assistant."
+    }));
+
     for msg in history {
-        messages.push(json!({
-            "role": msg.sender(),
-            "content": msg.content()
-        }));
+        messages.push(json!(msg));
     }
 
     messages.push(json!({
         "role": Sender::User,
         "content": user_prompt
     }));
-
-    println!("{messages:#?}");
 
     messages
 }

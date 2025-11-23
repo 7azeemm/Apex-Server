@@ -20,7 +20,7 @@ pub async fn schedule() {
         loop {
             ticker.tick().await;
             if let Err(err) = update().await {
-                error!("[Cosmetic-Prices] Failed to update cosmetic prices: {:?}", err);
+                error!(?err, "[Cosmetic-Prices] Failed to update cosmetic prices");
             }
             DATA_WAITER.notify_waiters()
         }

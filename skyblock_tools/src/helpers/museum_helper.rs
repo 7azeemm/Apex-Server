@@ -15,13 +15,10 @@ struct DonationItem {
     coins_per_xp: Option<f64>,
 }
 
-pub async fn get_missing_museum_donations(pdr: &mut PlayerDataResponse, page: u64, soulbound: bool) {
-    let mut sb = StringBuilder::new();
-    let player_uuid = pdr.player_uuid().to_string();
-
+pub async fn get_museum_donations(pdr: &PlayerDataResponse, sb: &mut StringBuilder, page: u64, soulbound: bool) {
     // Collect donated items
     let mut donated_items = HashSet::new();
-    if let Some(museum_donations) = get_museum_items(&player_uuid, pdr).await {
+    if let Some(museum_donations) = get_museum_items(pdr).await {
         for donation in museum_donations.iter() {
             donated_items.insert(donation.id().to_owned());
         }
@@ -140,6 +137,4 @@ pub async fn get_missing_museum_donations(pdr: &mut PlayerDataResponse, page: u6
         sb.push("- Prices represent the current Lowest BIN value for single items or the sum of Lowest BIN values for set pieces.".to_string());
         sb.push("- Donations are sorted by lowest coins per XP (most efficient first).".to_string());
     }
-
-    pdr.set_sb(sb);
 }

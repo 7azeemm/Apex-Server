@@ -28,25 +28,24 @@ use serde_json::Value;
 use std::cmp::max;
 use std::collections::HashMap;
 
-pub async fn get_player_overview(pdr: &mut PlayerDataResponse) {
-    let mut sb = StringBuilder::new();
+pub async fn get_profile_overview(pdr: &PlayerDataResponse, sb: &mut StringBuilder) {
     let data = pdr.profile_data();
+    let profile = pdr.profile();
 
-    sb.push(format!("GameMode: {} Profile", get_pretty_name(pdr.profile().game_mode())));
+    sb.push(format!("GameMode: {} Profile", get_pretty_name(profile.game_mode())));
 
     // SkyBlock Level
     if let Some(xp) = data.get_u64("leveling/experience") {
         let level = xp / 100;
         let progress = xp % 100;
-        sb.push(format!("SkyBlock Level {} ({}/100 XP)", level, progress));
+        sb.push(format!("Skyblock Level {} ({}/100 XP)", level, progress));
     }
 
     // Purse + Bank
-    sb.push(format!("Purse: {} coins", format_number(pdr.profile().purse())));
-    sb.push(match pdr.profile().bank() {
-        None => "Bank: unavailable".to_owned(),
-        Some(bank) => format!("Bank: {} coins", format_number(bank)),
-    });
+    sb.push(format!("Purse: {} coins", format_number(profile.purse())));
+    if let Some(bank) = profile.bank() {
+        sb.push(format!("Bank: {} coins", format_number(bank)))
+    }
 
     // Active Pet
     if let Some(pets) = data.get_array("pets_data/pets") {
@@ -91,24 +90,20 @@ pub async fn get_player_overview(pdr: &mut PlayerDataResponse) {
         }
 
         if count > 0 {
-            let avg = total_level as f64 / count as f64;
-            sb.push(format!("Average Skill Level: {:.2}", avg));
+            sb.push(format!("Average Skill Level: {:.2}", total_level as f64 / count as f64));
         }
     } else {
         sb.push("Skills: unavailable".to_owned())
     }
-
-    pdr.set_sb(sb);
 }
 
-pub async fn get_mining_info(pdr: &mut PlayerDataResponse) {
-    let mut sb = StringBuilder::new();
+pub async fn get_mining_info(pdr: &PlayerDataResponse, sb: &mut StringBuilder) {
     let profile_data = pdr.profile_data();
 
     let (_, mining_skill) = get_skill_level(profile_data, "SKILL_MINING", None);
     sb.push(format!("Mining Skill: {mining_skill}"));
 
-    pdr.profile().add_setup_info(SetupType::Mining, &mut sb);
+    pdr.profile().add_setup_info(SetupType::Mining, sb);
     sb.pushln();
 
     if let Some(mining_core) = profile_data.get("mining_core") {
@@ -151,17 +146,13 @@ pub async fn get_mining_info(pdr: &mut PlayerDataResponse) {
             }
         }
     }
-
-    pdr.set_sb(sb);
 }
 
-pub async fn get_garden_info(pdr: &mut PlayerDataResponse) {
-    let mut sb = StringBuilder::new();
-
+pub async fn get_garden_info(pdr: &PlayerDataResponse, sb: &mut StringBuilder) {
     let (_, farming_skill) = get_skill_level(pdr.profile_data(), "SKILL_FARMING", None);
     sb.push(format!("Farming Skill: {farming_skill}"));
 
-    pdr.profile().add_setup_info(SetupType::Farming, &mut sb);
+    pdr.profile().add_setup_info(SetupType::Farming, sb);
     sb.pushln();
 
     if let Some(garden) = get_garden_data(pdr).await {
@@ -238,43 +229,28 @@ pub async fn get_garden_info(pdr: &mut PlayerDataResponse) {
             sb.push(format!("- {}: {}", get_pretty_name(bracket), amount))
         }
     }
-
-    pdr.set_sb(sb);
 }
 
-pub async fn get_foraging_info(pdr: &mut PlayerDataResponse) {
-    let mut sb = StringBuilder::new();
-
+pub async fn get_foraging_info(pdr: &PlayerDataResponse, sb: &mut StringBuilder) {
     let (_, foraging_skill) = get_skill_level(pdr.profile_data(), "SKILL_FORAGING", None);
     sb.push(format!("Foraging Skill: {foraging_skill}"));
-
-    pdr.profile().add_setup_info(SetupType::Foraging, &mut sb);
-
-    pdr.set_sb(sb);
+    pdr.profile().add_setup_info(SetupType::Foraging, sb);
 }
 
-pub async fn get_fishing_info(pdr: &mut PlayerDataResponse) {
-    let mut sb = StringBuilder::new();
+pub async fn get_fishing_info(pdr: &PlayerDataResponse, sb: &mut StringBuilder) {
     let profile_data = pdr.profile_data();
 
     let (_, fishing_skill) = get_skill_level(profile_data, "SKILL_FISHING", None);
     sb.push(format!("Fishing Skill: {fishing_skill}"));
 
-    let trophy_fishing_tier = profile_data
-        .get_array("trophy_fish/rewards")
-        .map(|a| a.len())
-        .unwrap_or(0);
+    let trophy_fishing_tier = profile_data.get_array("trophy_fish/rewards").map(|a| a.len()).unwrap_or(0);
     sb.push(format!("Trophy Fishing Tier: {}", TROPHY_FISHING_TIERS.get(trophy_fishing_tier).unwrap_or(&"None")));
 
     sb.pushln();
-    pdr.profile().add_setup_info(SetupType::Fishing, &mut sb);
-
-    pdr.set_sb(sb);
+    pdr.profile().add_setup_info(SetupType::Fishing, sb);
 }
 
-pub async fn get_slayer_info(pdr: &mut PlayerDataResponse) {
-    let mut sb = StringBuilder::new();
-
+pub async fn get_slayers_info(pdr: &PlayerDataResponse, sb: &mut StringBuilder) {
     if let Some(slayer_bosses) = pdr.profile_data().get_object("slayer/slayer_bosses") {
         for (slayer, data) in slayer_bosses {
             let xp = data.get_u64("xp").unwrap_or_default();
@@ -289,12 +265,9 @@ pub async fn get_slayer_info(pdr: &mut PlayerDataResponse) {
     } else {
         sb.push("Slayers: unavailable".to_owned())
     }
-
-    pdr.set_sb(sb);
 }
 
-pub async fn get_dungeons_info(pdr: &mut PlayerDataResponse) {
-    let mut sb = StringBuilder::new();
+pub async fn get_dungeons_info(pdr: &PlayerDataResponse, sb: &mut StringBuilder) {
     let profile_data = pdr.profile_data();
 
     if let Some(dungeons) = profile_data.get("dungeons") {
@@ -320,7 +293,7 @@ pub async fn get_dungeons_info(pdr: &mut PlayerDataResponse) {
 
                     if let Some(setup_type) = SetupType::from_str(&selected_class) {
                         sb.push(format!("{selected_class} Setup:"));
-                        pdr.profile().add_setup_info(setup_type, &mut sb);
+                        pdr.profile().add_setup_info(setup_type, sb);
                         sb.pushln();
                     }
                 }
@@ -373,80 +346,9 @@ pub async fn get_dungeons_info(pdr: &mut PlayerDataResponse) {
             }
         }
     }
-
-    pdr.set_sb(sb);
 }
 
-pub async fn get_events_info(sb: &mut StringBuilder) {
-    sb.push(format!("SkyBlock Date: {}", get_skyblock_date()));
-    sb.pushln();
-
-    let mayor_info = get_mayor_info().await;
-    let mayor = mayor_info.mayor();
-    let mayor_perks = mayor.perks().keys().map(|s| s.as_str()).collect::<Vec<_>>().join(", ");
-    sb.push(format!("Current Mayor: {} (perks: [{}])", mayor.name(), mayor_perks));
-
-    if let Some(minister) = mayor_info.minister() {
-        let minister_perk = minister.perks().keys().map(|s| s.as_str()).collect::<Vec<_>>().join(", ");
-        sb.push(format!("Current Minister: {} (perk: {})", minister.name(), minister_perk));
-    }
-
-    sb.pushln();
-
-    if let Some(election) = mayor_info.election() {
-        sb.push("Current Open Election:".to_owned());
-        let total_votes: u64 = election.iter().filter_map(|(_, votes)| *votes).sum();
-
-        if total_votes == 0 {
-            sb.push(" (Votes are hidden)".to_owned());
-        }
-
-        for (mayor, votes) in election.iter() {
-            let mut mayor_str = format!("- {}", mayor.name());
-            if let Some(votes) = votes {
-                let percentage = match total_votes {
-                    0 => 0,
-                    _ => ((*votes as f64 / total_votes as f64) * 100.0).round() as u64,
-                };
-                mayor_str.push_str(&format!(" ({}% votes)", percentage));
-            }
-            sb.push(mayor_str)
-        }
-
-        sb.push(get_election_over_time_left());
-        sb.pushln();
-    }
-
-    sb.push("Special Mayors:".to_owned());
-    sb.push(get_special_mayors_info());
-    sb.pushln();
-
-    let upcoming_contests = get_upcoming_contests().await;
-    if !upcoming_contests.is_empty() {
-        sb.push("Jacob's Contests:".to_owned());
-        for (time, crops) in upcoming_contests.iter() {
-            if let Ok(timestamp) = time.parse::<u64>() {
-                let current_time = get_time_as_secs();
-                let time_diff = timestamp.saturating_sub(current_time);
-                let total_minutes = time_diff / 60;
-
-                // Format crops joined by "/"
-                let crops_str = crops.join(", ");
-
-                // Convert timestamp to HH:MM:SS format
-                let hours = (timestamp % 86400) / 3600;
-                let minutes = (timestamp % 3600) / 60;
-                let seconds = timestamp % 60;
-                let formatted_time = format!("{:02}:{:02}:{:02}", hours, minutes, seconds);
-
-                sb.push(format!("- [{}] after {}mins (at {})", crops_str, total_minutes, formatted_time));
-            }
-        }
-    }
-}
-
-pub async fn get_inventory(pdr: &mut PlayerDataResponse) {
-    let mut sb = StringBuilder::new();
+pub async fn get_inventory_contents(pdr: &PlayerDataResponse, sb: &mut StringBuilder) {
     let storage = pdr.profile().storage();
 
     let armor = storage.armor();
@@ -497,12 +399,9 @@ pub async fn get_inventory(pdr: &mut PlayerDataResponse) {
             }
         }
     }
-
-    pdr.set_sb(sb);
 }
 
-pub async fn get_misc_info(pdr: &mut PlayerDataResponse) {
-    let mut sb = StringBuilder::new();
+pub async fn get_misc_info(pdr: &PlayerDataResponse, sb: &mut StringBuilder) {
     let profile_data = pdr.profile_data();
 
     if let Some(bestiary_level) = profile_data.get_u64("bestiary/milestone/last_claimed_milestone") {
@@ -577,12 +476,9 @@ pub async fn get_misc_info(pdr: &mut PlayerDataResponse) {
             }
         }
     }
-
-    pdr.set_sb(sb);
 }
 
-pub async fn get_profile_networth(pdr: &mut PlayerDataResponse, detailed: bool) {
-    let mut sb = StringBuilder::new();
+pub async fn get_profile_networth(pdr: &PlayerDataResponse, sb: &mut StringBuilder, detailed: bool) {
     let mut total_value = 0;
 
     {
@@ -658,8 +554,7 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse, detailed: bool) 
     let api_disabled = total_value == 0;
 
     let mut museum_value = 0;
-    let player_uuid = pdr.player_uuid().to_string();
-    if let Some(museum_donations) = get_museum_items(&player_uuid, pdr).await {
+    if let Some(museum_donations) = get_museum_items(&pdr).await {
         for donation in museum_donations.iter() {
             if *donation.borrowing() { continue; };
             for item in donation.items() {
@@ -701,8 +596,74 @@ pub async fn get_profile_networth(pdr: &mut PlayerDataResponse, detailed: bool) 
         sb.pushln();
         sb.push("NOTE: the player's apis are likely disabled! they should be enabled to provide correct estimation.".to_owned());
     }
+}
 
-    pdr.set_sb(sb);
+pub async fn get_skyblock_events(sb: &mut StringBuilder) {
+    sb.push(format!("SkyBlock Date: {}", get_skyblock_date()));
+    sb.pushln();
+
+    let mayor_info = get_mayor_info().await;
+    let mayor = mayor_info.mayor();
+    let mayor_perks = mayor.perks().keys().map(|s| s.as_str()).collect::<Vec<_>>().join(", ");
+    sb.push(format!("Current Mayor: {} (perks: [{}])", mayor.name(), mayor_perks));
+
+    if let Some(minister) = mayor_info.minister() {
+        let minister_perk = minister.perks().keys().map(|s| s.as_str()).collect::<Vec<_>>().join(", ");
+        sb.push(format!("Current Minister: {} (perk: {})", minister.name(), minister_perk));
+    }
+
+    sb.pushln();
+
+    if let Some(election) = mayor_info.election() {
+        sb.push("Current Open Election:".to_owned());
+        let total_votes: u64 = election.iter().filter_map(|(_, votes)| *votes).sum();
+
+        if total_votes == 0 {
+            sb.push(" (Votes are hidden)".to_owned());
+        }
+
+        for (mayor, votes) in election.iter() {
+            let mut mayor_str = format!("- {}", mayor.name());
+            if let Some(votes) = votes {
+                let percentage = match total_votes {
+                    0 => 0,
+                    _ => ((*votes as f64 / total_votes as f64) * 100.0).round() as u64,
+                };
+                mayor_str.push_str(&format!(" ({}% votes)", percentage));
+            }
+            sb.push(mayor_str)
+        }
+
+        sb.push(get_election_over_time_left());
+        sb.pushln();
+    }
+
+    sb.push("Special Mayors:".to_owned());
+    sb.push(get_special_mayors_info());
+    sb.pushln();
+
+    let upcoming_contests = get_upcoming_contests().await;
+    if !upcoming_contests.is_empty() {
+        sb.push("Jacob's Contests:".to_owned());
+        for (time, crops) in upcoming_contests.iter() {
+            if let Ok(timestamp) = time.parse::<u64>() {
+                let current_time = get_time_as_secs();
+                let time_diff = timestamp.saturating_sub(current_time);
+                let total_minutes = time_diff / 60;
+
+                // Format crops joined by "/"
+                let crops_str = crops.join(", ");
+
+                // Convert timestamp to HH:MM:SS format
+                let hours = (timestamp % 86400) / 3600;
+                let minutes = (timestamp % 3600) / 60;
+                let seconds = timestamp % 60;
+                let formatted_time = format!("{:02}:{:02}:{:02}", hours, minutes, seconds);
+
+                sb.push(format!("- [{}] after {}mins (at {})", crops_str, total_minutes, formatted_time));
+            }
+        }
+    }
 }
 
 fn get_skill_level(data: &Value, skill: &str, xp: Option<u64>) -> (u64, String) {
@@ -777,8 +738,19 @@ fn get_level_and_progress(xp_table: &[u64], xp: u64, default: u64, max: u64, cap
     (level, str)
 }
 
-pub async fn get_pet(pdr: &mut PlayerDataResponse, item_name: &str, include_prices: bool) {
-    let mut sb = StringBuilder::new();
+pub async fn search_storage(pdr: &PlayerDataResponse, sb: &mut StringBuilder, name: &str, is_pet: bool, include_prices: bool) {
+    if name.is_empty() {
+        sb.push("Name should not be empty".to_owned());
+        return;
+    }
+
+    match is_pet {
+        true => get_pet(pdr, sb, name, include_prices).await,
+        false => get_item(pdr, sb, name, include_prices).await,
+    }
+}
+
+async fn get_pet(pdr: &PlayerDataResponse, sb: &mut StringBuilder, pet_name: &str, include_prices: bool) {
     let storage = pdr.profile().storage();
 
     // Collect pets
@@ -786,10 +758,9 @@ pub async fn get_pet(pdr: &mut PlayerDataResponse, item_name: &str, include_pric
     let pet_names: Vec<String> = pets.keys().map(|n| n.to_owned()).collect();
 
     // Find best matches
-    let matches = find_best_matches(item_name, &pet_names);
+    let matches = find_best_matches(pet_name, &pet_names);
     let Some(best_pet) = matches.first() else {
         sb.push("Couldn't find any matching pet!".to_owned());
-        pdr.set_sb(sb);
         return;
     };
 
@@ -817,12 +788,9 @@ pub async fn get_pet(pdr: &mut PlayerDataResponse, item_name: &str, include_pric
             sb.push(format!("- {pet}"));
         }
     }
-
-    pdr.set_sb(sb);
 }
 
-pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, include_prices: bool) {
-    let mut sb = StringBuilder::new();
+async fn get_item(pdr: &PlayerDataResponse, sb: &mut StringBuilder, item_name: &str, include_prices: bool) {
     let storage = pdr.profile().storage();
 
     // Collect storage items
@@ -849,7 +817,6 @@ pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, include_pri
     let matches = find_best_matches(item_name, &item_names);
     let Some(best_item) = matches.first() else {
         sb.push("Couldn't find any matching item!".to_owned());
-        pdr.set_sb(sb);
         return;
     };
 
@@ -882,6 +849,4 @@ pub async fn get_item(pdr: &mut PlayerDataResponse, item_name: &str, include_pri
             sb.push(format!("- {item}"));
         }
     }
-
-    pdr.set_sb(sb);
 }

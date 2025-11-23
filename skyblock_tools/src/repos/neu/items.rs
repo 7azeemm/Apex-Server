@@ -8,6 +8,7 @@ use std::error::Error;
 use std::fs;
 use std::sync::LazyLock;
 use tokio::sync::RwLock;
+use crate::item_utils::get_pretty_name;
 
 static ITEMS: LazyLock<RwLock<FxHashMap<String, Value>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
 static ITEM_NAMES: LazyLock<RwLock<FxHashMap<String, String>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
@@ -40,8 +41,9 @@ pub async fn load_items() -> Result<(), Box<dyn Error + Send + Sync>> {
                         if let Ok(rarity_index) = rarity_index.parse::<usize>() {
                             if let Some(rarity) = RARITIES.get(rarity_index) {
                                 let pet_id = format!("{}_{}", rarity, pet);
-                                pet_names_map.insert(pet_id.to_owned(), strip_formatting(&pet_name));
-                                items_map.insert(pet_id.to_owned(), value);
+                                let pet_name = format!("{} {}", get_pretty_name(rarity), strip_formatting(&pet_name));
+                                pet_names_map.insert(pet_id.clone(), pet_name);
+                                items_map.insert(pet_id, value);
                                 continue;
                             }
                         }
@@ -96,26 +98,19 @@ pub async fn get_item_display_name(item_id: &str) -> Option<String> {
     ITEM_NAMES.read().await.get(item_id).cloned()
 }
 
-pub async fn get_id_by_name(name: &str, pet: bool) -> Vec<String> {
-    let name_list = if pet { &PET_NAMES } else { &ITEM_NAMES };
-    let read_lock = name_list.read().await;
-    let names: Vec<String> = read_lock.values().cloned().collect();
+pub async fn get_id_by_name(name: &str) -> Vec<String> {
+    let mut items = ITEM_NAMES.read().await.clone();
+    items.extend(PET_NAMES.read().await.clone());
+    let names: Vec<String> = items.values().cloned().collect();
+
     let matches = find_best_matches(name, &names);
 
     if let Some(best_name) = matches.first() {
-        return if pet {
-            read_lock
-                .iter()
-                .filter(|(_, n)| *n == *best_name)
-                .map(|(id, _)| id.clone())
-                .collect()
-        } else {
-            read_lock
-                .iter()
-                .find(|(_, n)| *n == *best_name)
-                .map(|(id, _)| vec![id.clone()])
-                .unwrap_or_default()
-        };
+        return items
+            .iter()
+            .filter(|(_, n)| *n == *best_name)
+            .map(|(id, _)| id.clone())
+            .collect();
     }
 
     vec![]

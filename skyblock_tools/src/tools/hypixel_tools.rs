@@ -12,50 +12,43 @@ use tracing::error;
 const PLAYER_ENDPOINT: &str = "https://api.hypixel.net/v2/player";
 const STATUS_ENDPOINT: &str = "https://api.hypixel.net/v2/status";
 
-pub async fn get_player_info(pdr: &mut PlayerDataResponse) {
-    let mut sb = StringBuilder::new();
+pub async fn get_player_status(pdr: &PlayerDataResponse, sb: &mut StringBuilder) {
     let player_uuid = pdr.player_uuid();
 
-    let url = format!("{PLAYER_ENDPOINT}?key={}&uuid={}", get_hypixel_api_key(), player_uuid);
-    let json = match send_http_request(&url).await {
-        Ok(json) => json,
-        Err(err) => {
-            error!("Failed to get player info: {:?}", err);
-            return;
-        }
-    };
+    let url = format!("{PLAYER_ENDPOINT}?key={}&uuid={player_uuid}", get_hypixel_api_key());
+    match send_http_request(&url).await {
+        Err(err) => error!(?err, "Failed to get player info"),
+        Ok(json) => {
+            if let Some(player) = json.get("player") {
+                if let Some(username) = player.get_str("displayname") {
+                    sb.push(format!("Player: [{}] {username}", get_hypixel_rank(username, player)));
 
-    if let Some(player) = json.get("player") {
-        if let Some(username) = player.get_str("displayname") {
-            sb.push(format!("Player: [{}] {username}", get_hypixel_rank(username, player)));
-
-            let last_logout = player.get_u64("lastLogout")
-                .map(|t| format!("Last Active: {}", format_last_active(t)));
-            match get_player_status(player_uuid).await {
-                None => sb.push_option(last_logout),
-                Some(status) => {
-                    if !status.contains("Online") {
-                        sb.push(status);
-                        sb.push_option(last_logout)
-                    } else {
-                        sb.push(status)
+                    let last_logout = player.get_u64("lastLogout").map(|t| format!("Last Active: {}", format_last_active(t)));
+                    match get_status(player_uuid).await {
+                        None => sb.push_option(last_logout),
+                        Some(status) => {
+                            if !status.contains("Online") {
+                                sb.push(status);
+                                sb.push_option(last_logout)
+                            } else {
+                                sb.push(status)
+                            }
+                        }
                     }
                 }
             }
-        }
-    }
+        },
+    };
 
-    get_profiles_info(player_uuid, &mut sb).await;
-
-    pdr.set_sb(sb)
+    get_profiles_info(player_uuid, sb).await;
 }
 
-async fn get_player_status(player_uuid: &str) -> Option<String> {
-    let url = format!("{STATUS_ENDPOINT}?key={}&uuid={}", get_hypixel_api_key(), player_uuid);
+async fn get_status(player_uuid: &str) -> Option<String> {
+    let url = format!("{STATUS_ENDPOINT}?key={}&uuid={player_uuid}", get_hypixel_api_key());
     let json = match send_http_request(&url).await {
         Ok(json) => json,
         Err(err) => {
-            error!("Failed to get player status: {:?}", err);
+            error!(?err, "Failed to get player status");
             return None;
         }
     };

@@ -1,4 +1,3 @@
-use crate::endpoints::AuctioneerAuctionItem;
 use crate::item_utils::{decode_item, get_item_id};
 use crate::prices::cosmetic_prices::get_cosmetic_price;
 use crate::prices::item_value_calculator::calculate_item_value;
@@ -50,7 +49,7 @@ pub async fn schedule() {
                     DATA_WAITER.notify_waiters();
                 }
                 Err(err) => {
-                    error!("[Auctions] Failed to update auctions: {:?}", err);
+                    error!(?err, "[Auctions] Failed to update auctions");
                     ticker = interval_at(
                         tokio::time::Instant::now() + Duration::from_secs(MIN_DELAY_SECS),
                         Duration::from_secs(THRESHOLD),
@@ -80,7 +79,7 @@ async fn update() -> Result<u64, Box<dyn Error + Send + Sync>> {
             tasks.push(tokio::spawn(async move {
                 match fetch_page(page).await {
                     Ok(page_data) => process_page(page_data.auctions()).await,
-                    Err(e) => error!("[Auctions] Failed to fetch page {}: {}", page, e),
+                    Err(err) => error!(?err, "[Auctions] Failed to fetch page {}", page),
                 }
             }));
             next_page += 1;
@@ -134,7 +133,7 @@ async fn process_auction(auction: &Auction) {
     let item_nbt = match decode_item(auction.item_bytes()) {
         Ok(nbt) => nbt,
         Err(err) => {
-            error!("Failed to decode {}, err: {err}", auction.item_name());
+            error!(?err, "Failed to decode {}", auction.item_name());
             return;
         }
     };
@@ -246,8 +245,8 @@ fn get_max_price(lowest_bin: u64, budget: &Budget) -> u64 {
     lowest_bin.saturating_add(addition)
 }
 
-pub async fn search_in_auction_house(sb: &mut StringBuilder, name: &str, pet: bool, budget: Budget) {
-    let item_ids = get_id_by_name(name, pet).await;
+pub async fn get_auction_deals(sb: &mut StringBuilder, name: &str, budget: Budget) {
+    let item_ids = get_id_by_name(name).await;
 
     if item_ids.is_empty() {
         sb.push("Couldn't find any auctions by that name".to_owned());
@@ -395,22 +394,13 @@ pub async fn get_lowest_bin(item_id: &str) -> Option<u64> {
     }
 }
 
-pub async fn get_lowest_bin_and_id(item_id: &str) -> Option<(u64, String)> {
-    AUCTION_MANAGER.lowest_bins.read().await.get(item_id).map(|i| (*i.price(), i.auction_id().to_owned()))
-}
+pub async fn get_player_auctions(sb: &mut StringBuilder, player_uuid: &str) {
+    let player_auctions: Vec<(String, u64)> = AUCTION_MANAGER.auctions.read().await.iter()
+        .filter(|(_, auction)| auction.auctioneer() == player_uuid)
+        .map(|(_, auction)| (auction.item_name().to_owned(), *auction.price()))
+        .collect();
 
-pub async fn get_auction_by_id(auction_id: &str) -> Option<AuctionItem> {
-    AUCTION_MANAGER.auctions.read().await.get(auction_id).cloned()
-}
-
-pub async fn get_auctions_by_player(auctioneer_id: &str) -> Vec<AuctioneerAuctionItem> {
-    AUCTION_MANAGER.auctions.read().await
-        .iter()
-        .filter(|(_, auction)| auction.auctioneer() == auctioneer_id)
-        .map(|(id, auction)| AuctioneerAuctionItem {
-            auction_id: id.clone(),
-            item_name: auction.item_name().to_owned(),
-            price: *auction.price(),
-        })
-        .collect()
+    for (name, price) in player_auctions {
+        sb.push(format!("- Item: {} (Price: {} coins)", name, price));
+    }
 }

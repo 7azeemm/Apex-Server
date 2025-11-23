@@ -2,7 +2,7 @@ use crate::structs::item_structs::{ItemNbt, ItemValue};
 use derive_new::new;
 use getset::Getters;
 use rustc_hash::FxHashMap;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use tokio::sync::RwLock;
@@ -99,7 +99,7 @@ impl LowestBinItem {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize)]
 pub enum Budget {
     Low,
     Medium,
@@ -114,29 +114,6 @@ impl Display for Budget {
             Budget::Medium => write!(f, "Medium"),
             Budget::High => write!(f, "High"),
             Budget::NoLimit => write!(f, "NoLimit"),
-        }
-    }
-}
-
-#[derive(Serialize)]
-pub struct AuctionItemResponse {
-    pub auctioneer: String,
-    pub item_name: String,
-    pub item_id: String,
-    pub price: u64,
-    pub total_value: u64,
-    pub info: Vec<String>,
-}
-
-impl AuctionItemResponse {
-    pub async fn from_auction_item(item: &AuctionItem) -> Self {
-        Self {
-            auctioneer: item.auctioneer.clone(),
-            item_name: item.item_name.clone(),
-            item_id: item.item_id.clone(),
-            price: item.price,
-            total_value: item.value.value(),
-            info: item.value.info(),
         }
     }
 }

@@ -1,4 +1,4 @@
-pub mod enchantments;
+pub mod enchants;
 pub mod garden;
 pub mod misc;
 pub mod pets;

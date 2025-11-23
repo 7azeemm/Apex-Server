@@ -35,7 +35,7 @@ pub async fn schedule() {
                     DATA_WAITER.notify_waiters();
                 }
                 Err(err) => {
-                    error!("[Bazaar] Failed to update bazaar items: {:?}", err);
+                    error!(?err, "[Bazaar] Failed to update bazaar items");
                     ticker = interval_at(
                         Instant::now() + Duration::from_secs(MIN_DELAY_SECS),
                         Duration::from_secs(THRESHOLD),
@@ -70,6 +70,6 @@ pub async fn get_buy_price(id: &str) -> Option<u64> {
     BAZAAR.read().await.get(id).map(|p| *p.buy_price() as u64)
 }
 
-pub async fn get_sell_price(id: &str) -> Option<f64> {
-    BAZAAR.read().await.get(id).map(|p| *p.sell_price())
+pub async fn get_price(id: &str) -> Option<(u64, u64)> {
+    BAZAAR.read().await.get(id).map(|p| (*p.buy_price() as u64, *p.sell_price() as u64))
 }

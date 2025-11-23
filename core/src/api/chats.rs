@@ -1,5 +1,4 @@
 use crate::utils::database::get_db_pool;
-use crate::api::users::update_user_token_usage;
 use crate::structs::chat::{Chat, ChatSummary, Message};
 use axum::extract::Path;
 use axum::http::StatusCode;
@@ -136,35 +135,38 @@ pub async fn get_chat_or_create(session: &Arc<RwLock<Session>>, chat_uuid: Strin
     }
 }
 
-pub async fn add_messages(session: &Arc<RwLock<Session>>, chat: &Chat, messages: Vec<Message>) -> Result<Chat, Response> {
+pub async fn update_chat(session: &Arc<RwLock<Session>>, chat: &Chat, new_messages: Vec<Message>, tokens_usage: i64) {
     let player_uuid = session.read().await.user().player_uuid().to_owned();
 
     let mut chat = chat.clone();
     let chat_uuid = chat.uuid().to_owned();
-    let messages_json = serde_json::to_value(messages.clone()).unwrap();
-    let mut tokens = 0;
-    for message in messages {
-        tokens += message.tokens();
+    let messages_json = serde_json::to_value(new_messages.clone()).unwrap();
+    for message in new_messages {
         chat.add_message(message);
     }
 
     match sqlx::query!(
         r#"
-        UPDATE chats
-        SET messages = messages || $1::jsonb,
-            token_usage = $2,
-            updated_at = $3
-        WHERE id = $4 AND player_uuid = $5
+        WITH chat_update AS (
+            UPDATE chats
+            SET messages = messages || $1::jsonb,
+                token_usage = $2,
+                updated_at = $3
+            WHERE id = $4 AND player_uuid = $5
+        )
+        UPDATE users
+        SET tokens_used_today = tokens_used_today + $6,
+            tokens_used_total = tokens_used_total + $6
+        WHERE player_uuid = $5
         "#,
         messages_json, chat.token_usage(), chat.updated_at(),
-        chat_uuid, player_uuid
+        chat_uuid, player_uuid, tokens_usage
     ).execute(get_db_pool()).await {
-        Err(e) => Err(chat_err_resp(session, &chat_uuid, "Failed to add messages", &e.to_string(), false).await),
+        Err(e) => { chat_err_resp(session, &chat_uuid, "Failed to save chat and update tokens", &e.to_string(), false).await; },
         Ok(_) => {
-            update_user_token_usage(session, tokens).await;
             let mut session = session.write().await;
-            session.chats_mut().insert(chat_uuid, chat.clone());
-            Ok(chat)
+            session.user_mut().update_token_usage(tokens_usage);
+            session.chats_mut().insert(chat_uuid, chat);
         }
     }
 }
@@ -188,7 +190,7 @@ pub async fn remove_last_round(session: &Arc<RwLock<Session>>, chat: &Chat) -> R
     match sqlx::query!(
         r#"
         UPDATE chats
-        SET messages = messages - -2,
+        SET messages = (messages - -1) - -1,
             updated_at = $1
         WHERE id = $2 AND player_uuid = $3
         "#,

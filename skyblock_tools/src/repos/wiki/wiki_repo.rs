@@ -1,6 +1,5 @@
-use crate::repos::wiki::wiki_searcher::update_index;
+use crate::repos::wiki::wiki_searcher::{update_index, Section, WikiPage};
 use crate::structs::repo_structs::Repo;
-use crate::structs::wiki_structs::{Section, WikiPage};
 use common::extensions::json_ext::JsonExt;
 use rustc_hash::FxHashMap;
 use serde_json::Value;
@@ -36,8 +35,8 @@ async fn process() {
 
     let mut dir_entries = match fs::read_dir(format!("{REPO_PATH}/pages")).await {
         Ok(entries) => entries,
-        Err(e) => {
-            error!("[WIKI-Repo] Failed to read directory {}: {}", REPO_PATH, e);
+        Err(err) => {
+            error!(REPO_PATH, ?err, "[WIKI-Repo] Failed to read directory");
             return;
         }
     };
@@ -60,20 +59,16 @@ async fn process() {
 async fn process_file(path: &Path) -> Option<(String, WikiPage)> {
     let content = match fs::read_to_string(path).await {
         Ok(c) => c,
-        Err(e) => {
-            error!("[Wiki-Repo] Failed to read file {}: {}", path.display(), e);
+        Err(err) => {
+            error!(?path, ?err, "[Wiki-Repo] Failed to read file");
             return None;
         }
     };
 
     let json: Value = match serde_json::from_str(&content) {
         Ok(j) => j,
-        Err(e) => {
-            error!(
-                "[Wiki-Repo] Failed to parse JSON from {}: {}",
-                path.display(),
-                e
-            );
+        Err(err) => {
+            error!(?path, ?err, "[Wiki-Repo] Failed to parse JSON");
             return None;
         }
     };

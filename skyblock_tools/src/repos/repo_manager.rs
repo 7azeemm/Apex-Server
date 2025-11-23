@@ -35,7 +35,7 @@ pub async fn fetch_repo(repo: &Repo) -> bool {
     match result {
         Ok(updated) => updated,
         Err(err) => {
-            error!("[{}-Repo] Operation failed: {err}", repo.name);
+            error!(?err, "[{}-Repo] Operation failed", repo.name);
             false
         }
     }

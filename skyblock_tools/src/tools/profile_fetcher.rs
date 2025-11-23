@@ -76,7 +76,7 @@ pub async fn get_player_profile(username: &str, player_uuid: &str, profile_name:
     let json = match send_http_request(&url).await {
         Ok(json) => json,
         Err(err) => {
-            error!(username, player_uuid, profile_name, "Failed to get skyblock data: {:?}", err);
+            error!(?err, username, player_uuid, profile_name, "Failed to get skyblock data");
             return Err("Failed to get skyblock data".to_owned());
         }
     };
@@ -88,7 +88,7 @@ pub async fn get_player_profile(username: &str, player_uuid: &str, profile_name:
     let profiles = json.get_array("profiles").ok_or("Player does not have any profiles")?;
     let undashed_uuid = player_uuid.replace("-", "");
     let mut target_profile = None;
-    let mut info = HashMap::new();
+    let mut profiles_info = HashMap::new();
     let mut selected_profile = None;
 
     for profile in profiles {
@@ -107,7 +107,7 @@ pub async fn get_player_profile(username: &str, player_uuid: &str, profile_name:
                 target_profile = Some(profile);
             }
 
-            info.insert(cute_name.to_owned(), (profile_id.to_owned(), game_mode));
+            profiles_info.insert(cute_name.to_owned(), (profile_id.to_owned(), game_mode));
         }
     }
 
@@ -115,7 +115,7 @@ pub async fn get_player_profile(username: &str, player_uuid: &str, profile_name:
     let player_data = player_profiles
         .entry(player_uuid.to_owned())
         .or_insert(PlayerData::default());
-    player_data.update(info, selected_profile);
+    player_data.update(profiles_info, selected_profile);
 
     if let Some(profile) = target_profile {
         let parsed_profile = parse_profile(profile, player_uuid).await;
@@ -129,38 +129,50 @@ pub async fn get_player_profile(username: &str, player_uuid: &str, profile_name:
     Err("No Matching profile found".into())
 }
 
-pub async fn get_garden_data(pdr: &mut PlayerDataResponse) -> &Option<Value> {
-    let context = pdr.context();
-    let profile = pdr.profile_mut();
+pub async fn update_player_profile(player_uuid: &str, profile: PlayerProfile) {
+    let mut players = PLAYER_PROFILES.write().await;
+    if let Some(player) = players.get_mut(player_uuid) {
+        player.update_profile(profile);
+    }
+}
+
+pub async fn get_garden_data(pdr: &PlayerDataResponse) -> Option<Value> {
+    let profile = pdr.profile();
     if profile.garden().is_some() {
-        return profile.garden();
+        return profile.garden().clone();
     }
 
+    let context = pdr.context();
     let url = &format!("{GARDEN_API_ENDPOINT}?key={}&profile={}", get_hypixel_api_key(), profile.id());
     match send_http_request(url).await {
         Ok(value) => match value.get_bool("success").unwrap_or(false) {
-            true => profile.set_garden_data(value.get("garden").unwrap_or(&Value::default()).clone()),
+            true => {
+                let data = value.get("garden").unwrap_or(&Value::default()).clone();
+                profile.cache_garden_data(pdr.player_uuid(), data.clone()).await;
+                return Some(data);
+            },
             false => error!(?context, "Failed to get garden data"),
         },
-        Err(err) => error!(?context, "Failed to get garden data: {:?}", err),
+        Err(err) => error!(?err, ?context, "Failed to get garden data"),
     };
 
-    profile.garden()
+    None
 }
 
-pub async fn get_museum_items<'a>(player_uuid: &str, pdr: &'a mut PlayerDataResponse) -> &'a Option<Vec<MuseumDonation>> {
-    let context = pdr.context();
-    let profile = pdr.profile_mut();
+pub async fn get_museum_items(pdr: &PlayerDataResponse) -> Option<Vec<MuseumDonation>> {
+    let profile = pdr.profile();
     if profile.museum().is_some() {
-        return profile.museum();
+        return profile.museum().clone();
     }
 
+    let context = pdr.context();
     let url = &format!("{MUSEUM_API_ENDPOINT}?key={}&profile={}", get_hypixel_api_key(), profile.id());
     match send_http_request(url).await {
-        Err(err) => error!(?context, "Failed to get museum data: {:?}", err),
+        Err(err) => error!(?err, ?context, "Failed to get museum data"),
         Ok(value) => match value.get_bool("success").unwrap_or(false) {
             false => error!(?context, "Failed to get museum data"),
             true => {
+                let player_uuid = pdr.player_uuid();
                 let undashed_player_uuid = player_uuid.replace("-", "");
                 if let Some(donations) = value.get_object(&format!("members/{undashed_player_uuid}/items")) {
                     let mut donations_list = Vec::new();
@@ -175,13 +187,15 @@ pub async fn get_museum_items<'a>(player_uuid: &str, pdr: &'a mut PlayerDataResp
                         let donation = MuseumDonation::new(id.to_owned(), slot, borrowing, items);
                         donations_list.push(donation);
                     }
-                    profile.set_museum_data(donations_list);
+
+                    profile.cache_museum_data(pdr.player_uuid(), donations_list.clone()).await;
+                    return Some(donations_list)
                 }
             }
         }
     };
 
-    profile.museum()
+    None
 }
 
 async fn parse_profile(profile: &Value, player_uuid: &str) -> Option<PlayerProfile> {

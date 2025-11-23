@@ -1,4 +1,4 @@
-use crate::constants::enchantments::{NPC_ENCHANTS, STACKING_ENCHANTS, TIER_FIVE_ENCHANTS, TIER_ONE_ENCHANTS, TIER_THREE_ENCHANTS, UPGRADABLE_ENCHANTS};
+use crate::constants::enchants::{NPC_ENCHANTS, STACKING_ENCHANTS, TIER_FIVE_ENCHANTS, TIER_ONE_ENCHANTS, TIER_THREE_ENCHANTS, UPGRADABLE_ENCHANTS};
 use crate::constants::misc::{GEMSTONES, MASTER_STARS, STARRED_ITEMS_INGREDIENT};
 use crate::item_utils::{get_item_name, get_item_rarity, get_pet_info, get_pet_level, get_pet_obj, get_pretty_name};
 use crate::prices::auctions::{get_base_price, get_lowest_bin};

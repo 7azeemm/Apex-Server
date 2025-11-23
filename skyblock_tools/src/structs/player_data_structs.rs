@@ -1,7 +1,6 @@
 use crate::constants::setups::SetupType;
 use crate::structs::item_structs::ItemNbt;
-use crate::tools::profile_fetcher::get_player_profile;
-use common::player_fetcher::get_player_uuid;
+use crate::tools::profile_fetcher::{get_player_profile, update_player_profile};
 use derive_new::new;
 use getset::Getters;
 use serde_json::Value;
@@ -18,8 +17,7 @@ pub struct PlayerDataResponse {
 }
 
 impl PlayerDataResponse {
-    pub async fn new(username: String, profile_name: Option<String>) -> Result<Self, String> {
-        let player_uuid = get_player_uuid(&username).await.ok_or("Couldn't get player_uuid")?;
+    pub async fn new(username: String, player_uuid: String, profile_name: Option<String>) -> Result<Self, String> {
         let profile = get_player_profile(&username, &player_uuid, profile_name.clone()).await?;
         Ok(Self { username, player_uuid, profile_name, profile, sb: None })
     }
@@ -34,9 +32,6 @@ impl PlayerDataResponse {
     }
     pub fn profile(&self) -> &PlayerProfile {
         &self.profile
-    }
-    pub fn profile_mut(&mut self) -> &mut PlayerProfile {
-        &mut self.profile
     }
     pub fn profile_data(&self) -> &Value {
         &self.profile.data
@@ -58,6 +53,7 @@ impl PlayerDataResponse {
     }
 }
 
+#[derive(Clone)]
 pub struct StringBuilder {
     lines: Vec<String>,
 }
@@ -107,6 +103,10 @@ impl PlayerData {
     pub fn update(&mut self, profiles_info: HashMap<String, (String, String)>, selected: Option<String>) {
         self.profiles_info = profiles_info;
         self.selected_profile = selected;
+    }
+
+    pub fn update_profile(&mut self, profile: PlayerProfile) {
+        self.profiles.insert(profile.id().to_owned(), profile);
     }
 
     pub fn add_profile(&mut self, profile: PlayerProfile) -> PlayerProfile {
@@ -217,11 +217,16 @@ impl PlayerProfile {
         }
     }
 
-    pub fn set_garden_data(&mut self, data: Value) {
-        self.garden = Some(data);
+    pub async fn cache_garden_data(&self, player_uuid: &str, data: Value) {
+        let mut clone = self.clone();
+        clone.garden = Some(data);
+        update_player_profile(player_uuid, clone).await;
     }
-    pub fn set_museum_data(&mut self, data: Vec<MuseumDonation>) {
-        self.museum = Some(data);
+
+    pub async fn cache_museum_data(&self, player_uuid: &str, data: Vec<MuseumDonation>) {
+        let mut clone = self.clone();
+        clone.museum = Some(data);
+        update_player_profile(player_uuid, clone).await;
     }
 }
 

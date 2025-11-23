@@ -2,6 +2,7 @@ use chrono::Utc;
 use derive_new::new;
 use getset::Getters;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Serialize, Clone, new, Getters)]
 #[getset(get = "pub")]
@@ -32,7 +33,17 @@ impl Chat {
 pub struct Message {
     sender: Sender,
     content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tools: Option<Vec<ToolExecution>>,
     tokens: i64
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ToolExecution {
+    tool_call_id: String,
+    tool_name: String,
+    args: String,
+    content: Value,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

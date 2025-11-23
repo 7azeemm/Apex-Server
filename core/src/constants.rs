@@ -1,5 +1,7 @@
 use crate::structs::plan::{Plan, PlanConfig};
 
+pub const CACHED_INPUT_TOKENS_RATE: f32 = 0.25;
+
 pub const MAINTENANCE: bool = false;
 pub const MIN_VERSION: &str = "1.0.0";
 pub const PLAN_CONFIGS: [PlanConfig; 3] = [

@@ -84,32 +84,6 @@ pub async fn create_user(pool: &PgPool, player_uuid: String, player_name: String
     Ok(new_user)
 }
 
-pub async fn update_user_token_usage(session: &Arc<RwLock<Session>>, tokens_used: i64) {
-    let player_uuid = session.read().await.user().player_uuid().clone();
-
-    match sqlx::query!(
-        r#"
-        UPDATE users
-        SET tokens_used_today = tokens_used_today + $1,
-            tokens_used_total = tokens_used_total + $1
-        WHERE player_uuid = $2
-        "#,
-        tokens_used, player_uuid
-    ).execute(get_db_pool()).await {
-        Ok(_) => {
-            let mut session = session.write().await;
-            session.user_mut().update_token_usage(tokens_used);
-        }
-        Err(err) => {
-            let _ = ApiResponse::internal_err(
-                "Failed to update user token usage",
-                err,
-                &session.read().await.context(),
-            );
-        }
-    }
-}
-
 pub async fn upgrade_plan(player_uuid: &str, player_name: &str, new_plan: Plan) {
     remove_user_session(player_uuid).await;
 

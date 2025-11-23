@@ -24,7 +24,8 @@ pub const UPGRADABLE_ENCHANTS: Map<&'static str, &'static str> = phf_map! {
     "luck_of_the_sea_7" => "GOLD_BOTTLE_CAP",
     "ender_slayer_7" => "ENDSTONE_IDOL",
     "smite_7" => "SEVERED_HAND",
-    "bane_of_arthropods_7" => "ENSNARED"
+    "bane_of_arthropods_7" => "ENSNARED",
+    "venomous_7" => "FATEFUL_STINGER"
 };
 
 pub const TIER_ONE_ENCHANTS: &[&str] = &[

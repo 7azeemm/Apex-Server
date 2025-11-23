@@ -26,7 +26,7 @@ pub async fn schedule() {
         loop {
             ticker.tick().await;
             if let Err(err) = update_mayors_info().await {
-                error!("[Mayor-Info] Failed to update data: {:?}", err);
+                error!(?err, "[Mayor-Info] Failed to update data");
             }
             DATA_WAITER.notify_waiters()
         }

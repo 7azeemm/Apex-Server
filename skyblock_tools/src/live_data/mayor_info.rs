@@ -11,7 +11,7 @@ use tokio::time::{interval_at, Instant};
 use tracing::error;
 
 const MAYOR_ENDPOINT: &str = "https://api.hypixel.net/v2/resources/skyblock/election";
-const THRESHOLD: u64 = 300;
+const THRESHOLD_DURATION: Duration = Duration::from_secs(300);
 const REAL_HOURS_PER_SB_YEAR: i64 = 124;
 const ELECTION_OFFSET_HOURS: i64 = 29;
 const ELECTION_OFFSET_MINS: i64 = 20;
@@ -22,7 +22,7 @@ static MAYOR_INFO: LazyLock<RwLock<MayorInfo>> = LazyLock::new(|| RwLock::new(Ma
 
 pub async fn schedule() {
     tokio::spawn(async {
-        let mut ticker = interval_at(Instant::now(), Duration::from_secs(THRESHOLD));
+        let mut ticker = interval_at(Instant::now(), THRESHOLD_DURATION);
         loop {
             ticker.tick().await;
             if let Err(err) = update_mayors_info().await {

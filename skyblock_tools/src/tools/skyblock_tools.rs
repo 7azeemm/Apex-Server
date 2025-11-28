@@ -71,7 +71,7 @@ pub async fn get_profile_overview(pdr: &PlayerDataResponse, sb: &mut StringBuild
     }
 
     // Skills
-    if let Some(skills) = data.get_object("tools/experience") && !skills.is_empty() {
+    if let Some(skills) = data.get_object("player_data/experience") && !skills.is_empty() {
         sb.push("Skills:".to_owned());
         let mut total_level = 0;
         let mut count = 0;
@@ -669,7 +669,7 @@ pub async fn get_skyblock_events(sb: &mut StringBuilder) {
 fn get_skill_level(data: &Value, skill: &str, xp: Option<u64>) -> (u64, String) {
     let xp = match xp {
         Some(xp) => xp,
-        None => match data.get_f64(&format!("tools/experience/{skill}")) {
+        None => match data.get_f64(&format!("player_data/experience/{skill}")) {
             Some(xp) => xp as u64,
             None => return (0, "unavailable".to_owned()),
         },

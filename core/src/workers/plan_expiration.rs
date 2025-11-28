@@ -6,6 +6,8 @@ use crate::api::auth::add_pending_notification;
 use crate::utils::database::get_db_pool;
 use crate::structs::plan::Plan;
 
+const INTERVAL_DURATION: Duration = Duration::from_secs(60);
+
 pub fn schedule() {
     tokio::spawn(async move {
         loop {
@@ -13,7 +15,7 @@ pub fn schedule() {
                 error!("Plan expiration error: {e}");
             }
 
-            sleep(Duration::from_secs(60)).await;
+            sleep(INTERVAL_DURATION).await;
         }
     });
 }

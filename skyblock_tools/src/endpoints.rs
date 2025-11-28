@@ -18,8 +18,6 @@ use crate::tools::skyblock_tools::{get_dungeons_info, get_skyblock_events, get_f
 #[derive(Deserialize, Debug)]
 pub struct ToolRequest {
     tool_name: String,
-    username: Option<String>,
-    profile: Option<String>,
     #[serde(default)]
     args: serde_json::Value,
 }
@@ -57,12 +55,12 @@ pub async fn execute_tool(Json(req): Json<ToolRequest>) -> impl IntoResponse {
         _ => {}
     }
 
-    let username = match req.username {
-        None => return "Username required for this tool".into(),
-        Some(username) => username
+    let player_name = match req.args.get_str("player_name") {
+        None => return "Player name is required for this tool".into(),
+        Some(username) => username.to_owned()
     };
 
-    let player_uuid = match get_player_uuid(&username).await {
+    let player_uuid = match get_player_uuid(&player_name).await {
         None => return "Couldn't get find the player".into(),
         Some(player_uuid) => player_uuid
     };
@@ -75,7 +73,11 @@ pub async fn execute_tool(Json(req): Json<ToolRequest>) -> impl IntoResponse {
         _ => {}
     }
 
-    let pdr = match PlayerDataResponse::new(username, player_uuid, req.profile).await {
+    let profile_name = req.args.get_str("profile_name")
+        .filter(|n| *n != "null")
+        .map(|s| s.to_owned());
+
+    let pdr = match PlayerDataResponse::new(player_name, player_uuid, profile_name).await {
         Err(err) => return err.into(),
         Ok(pdr) => pdr
     };

@@ -19,7 +19,7 @@ pub async fn get_chats(Extension(session): Extension<Arc<RwLock<Session>>>) -> R
 
     let chats = match sqlx::query!(
         r#"
-        SELECT id, chat_name, updated_at
+        SELECT id, chat_name, chat_type, updated_at
         FROM chats
         WHERE player_uuid = $1
         ORDER BY updated_at DESC
@@ -36,6 +36,7 @@ pub async fn get_chats(Extension(session): Extension<Arc<RwLock<Session>>>) -> R
             ChatSummary::new(
                 chat.id,
                 chat.chat_name,
+                chat.chat_type,
                 chat.updated_at,
             )
         })
@@ -44,7 +45,7 @@ pub async fn get_chats(Extension(session): Extension<Arc<RwLock<Session>>>) -> R
     ApiResponse::ok(json!({"chats": chats}))
 }
 
-pub async fn create_chat(session: &Arc<RwLock<Session>>, prompt: &str) -> Result<Chat, Response> {
+pub async fn create_chat(session: &Arc<RwLock<Session>>, chat_type: &str, prompt: &str) -> Result<Chat, Response> {
     let pool = get_db_pool();
     let current_time = Utc::now().timestamp();
     let chat_uuid = Uuid::new_v4().to_string();
@@ -55,14 +56,17 @@ pub async fn create_chat(session: &Arc<RwLock<Session>>, prompt: &str) -> Result
 
     match sqlx::query!(
         r#"
-        INSERT INTO chats (id, player_uuid, chat_name, messages, token_usage, updated_at, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO chats (id, player_uuid, chat_name, chat_type, messages, token_usage, updated_at, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         "#,
-        chat_uuid, player_uuid, chat_name, json!(messages),
+        chat_uuid, player_uuid, chat_name, chat_type, json!(messages),
         tokens, current_time, current_time
     ).execute(pool).await {
         Ok(_) => {
-            let chat = Chat::new(chat_uuid.clone(), chat_name.to_owned(), messages, 0, current_time, current_time);
+            let chat = Chat::new(
+                chat_uuid.clone(), chat_name.to_owned(), chat_type.to_owned(),
+                messages, 0, current_time, current_time
+            );
             let mut session = session.write().await;
             session.chats_mut().insert(chat_uuid, chat.clone());
             Ok(chat)
@@ -91,7 +95,7 @@ async fn fetch_chat(pool: &PgPool, session: &Arc<RwLock<Session>>, chat_uuid: &s
 
     let chat = match sqlx::query!(
         r#"
-        SELECT id, chat_name, messages, token_usage, updated_at, created_at
+        SELECT id, chat_name, chat_type, messages, token_usage, updated_at, created_at
         FROM chats
         WHERE id = $1 AND player_uuid = $2
         "#,
@@ -110,6 +114,7 @@ async fn fetch_chat(pool: &PgPool, session: &Arc<RwLock<Session>>, chat_uuid: &s
     let chat = Chat::new(
         chat_uuid.to_owned(),
         chat.chat_name,
+        chat.chat_type,
         messages,
         chat.token_usage,
         chat.updated_at,
@@ -122,9 +127,9 @@ async fn fetch_chat(pool: &PgPool, session: &Arc<RwLock<Session>>, chat_uuid: &s
     Ok(chat)
 }
 
-pub async fn get_chat_or_create(session: &Arc<RwLock<Session>>, chat_uuid: String, prompt: &str, retry: bool) -> Result<Chat, Response> {
+pub async fn get_chat_or_create(session: &Arc<RwLock<Session>>, chat_uuid: String, chat_type: &str, prompt: &str, retry: bool) -> Result<Chat, Response> {
     match chat_uuid == "new" {
-        true => create_chat(session, prompt).await,
+        true => create_chat(session, chat_type, prompt).await,
         false => {
             let chat = fetch_chat(get_db_pool(), session, &chat_uuid).await?;
             match retry {

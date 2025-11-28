@@ -9,14 +9,14 @@ use tokio::time::{interval_at, Instant};
 use tracing::error;
 
 const ENDPOINT: &str = "https://raw.githubusercontent.com/SkyHelperBot/Prices/main/pricesV2.json";
-const THRESHOLD: u64 = 300;
+const THRESHOLD_DURATION: Duration = Duration::from_secs(300);
 
 static DATA_WAITER: Notify = Notify::const_new();
 static DATA: LazyLock<RwLock<FxHashMap<String, u64>>> = LazyLock::new(|| RwLock::new(HashMap::default()));
 
 pub async fn schedule() {
     tokio::spawn(async {
-        let mut ticker = interval_at(Instant::now(), Duration::from_secs(THRESHOLD));
+        let mut ticker = interval_at(Instant::now(), THRESHOLD_DURATION);
         loop {
             ticker.tick().await;
             if let Err(err) = update().await {

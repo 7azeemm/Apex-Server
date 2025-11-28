@@ -18,38 +18,20 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="I'm not stopping">
-      <change beforePath="$PROJECT_DIR$/.idea/SkyBlock-Mod-Backend.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/SkyBlock-Mod-Backend.iml" afterDir="false" />
+    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="Endpoint and other stuff">
+      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/src/player_fetcher.rs" beforeDir="false" afterPath="$PROJECT_DIR$/common/src/player_fetcher.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/api/auth.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/auth.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/src/api/chats.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/chats.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/src/api/completions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/completions.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/api/users.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/users.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/src/constants.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/constants.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/src/structs/chat.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/structs/chat.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/constants/enchantments.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/constants/enchants.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/constants/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/constants/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/workers/plan_expiration.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/workers/plan_expiration.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/skyblock_tools/src/endpoints.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/endpoints.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/helpers/accessory_helper.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/helpers/accessory_helper.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/helpers/museum_helper.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/helpers/museum_helper.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/skyblock_tools/src/live_data/jacob_contests.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/live_data/jacob_contests.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/skyblock_tools/src/live_data/mayor_info.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/live_data/mayor_info.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/prices/auctions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/prices/auctions.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/prices/bazaar.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/prices/bazaar.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/skyblock_tools/src/prices/cosmetic_prices.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/prices/cosmetic_prices.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/prices/item_value_calculator.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/prices/item_value_calculator.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/items.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/items.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/neu_repo.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/neu_repo.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/repo_manager.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/repo_manager.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/wiki/wiki_repo.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/wiki/wiki_repo.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/wiki/wiki_searcher.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/wiki/wiki_searcher.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/structs/auctions_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/structs/auctions_structs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/structs/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/structs/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/structs/player_data_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/structs/player_data_structs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/structs/wiki_structs.rs" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/skyblock_tools/src/tools/hypixel_tools.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/tools/hypixel_tools.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/tools/profile_fetcher.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/tools/profile_fetcher.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/skyblock_tools/src/tools/skyblock_tools.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/tools/skyblock_tools.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -133,7 +115,7 @@
   <component name="RsExternalLinterProjectSettings">
     <option name="runOnTheFly" value="false" />
   </component>
-  <component name="RunManager" selected="Cargo.Run skyblock_tools">
+  <component name="RunManager" selected="Cargo.Run core">
     <configuration name="Run core" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="run --package core --bin core" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -211,7 +193,11 @@
       <workItem from="1763812698742" duration="20117000" />
       <workItem from="1763882494756" duration="723000" />
       <workItem from="1763889044981" duration="252000" />
-      <workItem from="1763889324612" duration="4599000" />
+      <workItem from="1763889324612" duration="20228000" />
+      <workItem from="1764004086143" duration="340000" />
+      <workItem from="1764182415206" duration="383000" />
+      <workItem from="1764347937976" duration="2038000" />
+      <workItem from="1764350167310" duration="1235000" />
     </task>
     <task id="LOCAL-00001" summary="Surprise">
       <option name="closed" value="true" />
@@ -261,7 +247,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763579641342</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Endpoint and other stuff">
+      <option name="closed" value="true" />
+      <created>1763894501763</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1763894501763</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -288,7 +282,8 @@
     <MESSAGE value="..." />
     <MESSAGE value="Logging is Done :D" />
     <MESSAGE value="I'm not stopping" />
-    <option name="LAST_COMMIT_MESSAGE" value="I'm not stopping" />
+    <MESSAGE value="Endpoint and other stuff" />
+    <option name="LAST_COMMIT_MESSAGE" value="Endpoint and other stuff" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

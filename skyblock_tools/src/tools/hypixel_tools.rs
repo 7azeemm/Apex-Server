@@ -1,46 +1,74 @@
+use std::sync::LazyLock;
+use std::time::{Duration, Instant};
 use crate::constants::misc::ISLAND_NAMES;
 use crate::item_utils::get_pretty_name;
 use crate::structs::player_data_structs::{PlayerDataResponse, StringBuilder};
 use crate::tools::profile_fetcher::get_profiles_info;
 use crate::utils::get_hypixel_api_key;
 use chrono::Utc;
+use rustc_hash::FxHashMap;
 use common::extensions::json_ext::JsonExt;
 use common::http::send_http_request;
 use serde_json::Value;
+use tokio::sync::RwLock;
 use tracing::error;
 
 const PLAYER_ENDPOINT: &str = "https://api.hypixel.net/v2/player";
 const STATUS_ENDPOINT: &str = "https://api.hypixel.net/v2/status";
+const CACHE_DURATION: Duration = Duration::from_secs(60);
+
+static PLAYERS_DATA: LazyLock<RwLock<FxHashMap<String, (Value, Instant)>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
+
+pub async fn clear_expired_cache() {
+    let mut cache = PLAYERS_DATA.write().await;
+    let now = Instant::now();
+
+    cache.retain(|_uuid, (_player, timestamp)| now.duration_since(*timestamp) < CACHE_DURATION);
+}
 
 pub async fn get_player_status(pdr: &PlayerDataResponse, sb: &mut StringBuilder) {
+    clear_expired_cache().await;
     let player_uuid = pdr.player_uuid();
+
+    if let Some((cached_player, _)) = PLAYERS_DATA.read().await.get(player_uuid).cloned() {
+        process_player(&cached_player, player_uuid, sb).await;
+        return;
+    }
 
     let url = format!("{PLAYER_ENDPOINT}?key={}&uuid={player_uuid}", get_hypixel_api_key());
     match send_http_request(&url).await {
         Err(err) => error!(?err, "Failed to get player info"),
         Ok(json) => {
             if let Some(player) = json.get("player") {
-                if let Some(username) = player.get_str("displayname") {
-                    sb.push(format!("Player: [{}] {username}", get_hypixel_rank(username, player)));
-
-                    let last_logout = player.get_u64("lastLogout").map(|t| format!("Last Active: {}", format_last_active(t)));
-                    match get_status(player_uuid).await {
-                        None => sb.push_option(last_logout),
-                        Some(status) => {
-                            if !status.contains("Online") {
-                                sb.push(status);
-                                sb.push_option(last_logout)
-                            } else {
-                                sb.push(status)
-                            }
-                        }
-                    }
-                }
+                PLAYERS_DATA.write().await.insert(player_uuid.to_string(), (player.clone(), Instant::now()));
+                process_player(player, player_uuid, sb).await;
             }
         },
     };
 
     get_profiles_info(player_uuid, sb).await;
+}
+
+async fn process_player(player: &Value, player_uuid: &str, sb: &mut StringBuilder) {
+    if let Some(username) = player.get_str("displayname") {
+        sb.push(format!("Player: [{}] {}", get_hypixel_rank(username, player), username));
+
+        let last_logout = player
+            .get_u64("lastLogout")
+            .map(|t| format!("Last Active: {}", format_last_active(t)));
+
+        match get_status(player_uuid).await {
+            None => sb.push_option(last_logout),
+            Some(status) => {
+                if !status.contains("Online") {
+                    sb.push(status);
+                    sb.push_option(last_logout)
+                } else {
+                    sb.push(status)
+                }
+            }
+        }
+    }
 }
 
 async fn get_status(player_uuid: &str) -> Option<String> {
@@ -58,25 +86,15 @@ async fn get_status(player_uuid: &str) -> Option<String> {
         let online_str = if online { "Online" } else { "Offline" };
         let mut str = format!("Status: {online_str}");
         if online && let Some(game_type) = session.get_str("gameType") {
-            let island_name = ISLAND_NAMES
-                .get(game_type)
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| get_pretty_name(game_type));
-            str.push_str(&format!(" in {}", island_name));
+            str.push_str(&format!(" in {}", get_pretty_name(game_type)));
 
             if let Some(mode) = session.get_str("mode") {
-                let pretty_mode = get_pretty_name(mode);
-                if !pretty_mode.starts_with(&island_name) {
-                    str.push_str(&format!(" {}", pretty_mode));
-                } else {
-                    let trimmed_mode = pretty_mode
-                        .strip_prefix(&island_name)
-                        .unwrap_or(&pretty_mode)
-                        .trim_start();
-                    if !trimmed_mode.is_empty() {
-                        str.push_str(&format!(" {}", trimmed_mode));
-                    }
-                }
+                let mode = ISLAND_NAMES
+                    .get(mode)
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| get_pretty_name(mode));
+
+                str.push_str(&format!(" {mode}"))
             }
         }
         return Some(str);

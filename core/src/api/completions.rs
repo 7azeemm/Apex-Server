@@ -24,6 +24,7 @@ use crate::structs::api_structs::ApiResponse;
 use crate::structs::auth_structs::Session;
 use crate::structs::plan::Plan;
 
+const CHAT_TYPES: &[&str] = &["normal", "skyblock"];
 const AI_SERVER_CHAT_ENDPOINT: &str = "http://127.0.0.1:8001/chat";
 const MAX_PROMPT_CHARS: usize = 4000;
 
@@ -31,6 +32,7 @@ const MAX_PROMPT_CHARS: usize = 4000;
 pub struct CompletionsRequest {
     chat_uuid: String,
     prompt: String,
+    chat_type: String,
     retry: Option<bool>,
 }
 
@@ -45,12 +47,20 @@ pub async fn completions_handler(
 ) -> Result<Sse<impl Stream<Item=Result<Event, Infallible>>>, Response> {
     let chat_uuid = request.chat_uuid;
     let prompt = request.prompt;
+    let chat_type = request.chat_type;
     let retry = request.retry.unwrap_or(false);
 
-    if prompt.len() > MAX_PROMPT_CHARS {
+    if !CHAT_TYPES.contains(&&*chat_type) {
         return Err(ApiResponse::err_and_log(
-            &format!("Prompt is too long! Maximum {} characters allowed.", MAX_PROMPT_CHARS),
-            StatusCode::BAD_REQUEST, "", &[]
+            "chat_type is invalid",
+            StatusCode::BAD_REQUEST, "", &[("chat_type", chat_type)]
+        ));
+    }
+
+    if prompt.len() > MAX_PROMPT_CHARS {
+        return Err(ApiResponse::err(
+            "Prompt is too long! Maximum",
+            StatusCode::BAD_REQUEST
         ));
     }
 
@@ -67,7 +77,7 @@ pub async fn completions_handler(
         user.plan().clone()
     };
 
-    let chat = get_chat_or_create(&session, chat_uuid, &prompt, retry).await?;
+    let chat = get_chat_or_create(&session, chat_uuid, &chat_type, &prompt, retry).await?;
     let chat_uuid = chat.uuid().to_owned();
     let chat_name = chat.name().to_owned();
 
@@ -76,7 +86,7 @@ pub async fn completions_handler(
 
     let response = HTTP_CLIENT
         .post(AI_SERVER_CHAT_ENDPOINT)
-        .json(&json!({"messages": messages_json}))
+        .json(&json!({"messages": messages_json, "chat_type": chat_type}))
         .send()
         .await
         .map_err(|e| {
@@ -189,11 +199,6 @@ pub fn build_context_messages(chat_messages: &[Message], user_prompt: &str, cont
     history.reverse();
 
     let mut messages = vec![];
-
-    messages.push(json!({
-        "role": "system",
-        "content": "You are a helpful assistant."
-    }));
 
     for msg in history {
         messages.push(json!(msg));

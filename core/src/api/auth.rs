@@ -26,11 +26,11 @@ use tokio::sync::RwLock;
 use tokio::time::{interval_at, Instant};
 use tracing::error;
 use uuid::Uuid;
-use crate::constants::{CONTACTS, MAINTENANCE, MIN_VERSION};
+use crate::constants::{MAINTENANCE, MIN_VERSION};
 use crate::structs::api_structs::ApiResponse;
 
 const MOJANG_KEYS_ENDPOINT: &str = "https://api.minecraftservices.com/publickeys";
-const TOKEN_LIFESPAN: i64 = 310;
+const TOKEN_LIFESPAN: i64 = (50 * 60) + 10;
 const CHECK_EXPIRED_TOKENS_THRESHOLD: u64 = 5;
 const MOJANG_KEYS_FETCH_THRESHOLD: u64 = 30 * 60;
 
@@ -179,7 +179,6 @@ pub async fn auth(ValidatedJson(request): ValidatedJson<TokenRequest>) -> Respon
         Ok(user) => {
             let minecraft_version = request.minecraft_version().to_owned();
             let mod_version = request.mod_version().to_owned();
-            let contacts: HashMap<&str, &str> = CONTACTS.iter().copied().collect();
 
             let user_info = UserInfo::from_user(&user);
             let token = generate_token(user, minecraft_version, mod_version).await;
@@ -188,7 +187,6 @@ pub async fn auth(ValidatedJson(request): ValidatedJson<TokenRequest>) -> Respon
                 "token": token,
                 "user_info": user_info,
                 "maintenance": MAINTENANCE,
-                "contacts": contacts,
             });
 
             if let Some(notification) = PENDING_NOTIFICATIONS.write().await.remove(&player_uuid) {
@@ -280,6 +278,10 @@ pub async fn auth_middleware(mut req: Request, next: Next) -> impl IntoResponse 
         .and_then(|h| h.to_str().ok())
         .and_then(|s| s.strip_prefix("Bearer "))
         .map(|s| s.to_string());
+
+    if MAINTENANCE {
+        return ApiResponse::err("The mod is under maintenance", StatusCode::METHOD_NOT_ALLOWED)
+    }
 
     match token {
         Some(t) => match validate_token(&t).await {

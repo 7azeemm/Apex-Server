@@ -1,8 +1,9 @@
-use crate::structs::bazaar_structs::{BazaarResponse, PriceData};
+use crate::structs::bazaar_structs::{BazaarResponse, QuickStatus, Product};
 use crate::utils::get_time_as_secs;
 use common::http::send_raw_http_request;
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxBuildHasher, FxHashMap};
 use std::cmp::max;
+use std::collections::HashMap;
 use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::sync::{Notify, RwLock};
@@ -13,7 +14,7 @@ const API_ENDPOINT: &str = "https://api.hypixel.net/v2/skyblock/bazaar";
 const THRESHOLD: u64 = 70;
 const MIN_DELAY_SECS: u64 = 20;
 
-static BAZAAR: LazyLock<RwLock<FxHashMap<String, PriceData>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
+pub static BAZAAR: LazyLock<RwLock<HashMap<String, Product>>> = LazyLock::new(|| RwLock::new(HashMap::default()));
 static DATA_WAITER: Notify = Notify::const_new();
 
 pub async fn schedule() {
@@ -55,21 +56,16 @@ async fn update() -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
         return Err("API Request was unsuccessful".into());
     }
 
-    let products = bazaar_response.products();
-    let &last_updated = bazaar_response.last_updated();
-
     let mut bazaar = BAZAAR.write().await;
-    for (id, data) in products {
-        bazaar.insert(id.clone(), PriceData::new(data.buy_price(), data.sell_price()));
-    }
+    bazaar.clone_from(bazaar_response.products());
 
-    Ok(last_updated)
+    Ok(*bazaar_response.last_updated())
 }
 
 pub async fn get_buy_price(id: &str) -> Option<u64> {
-    BAZAAR.read().await.get(id).map(|p| *p.buy_price() as u64)
+    BAZAAR.read().await.get(id).map(|p| p.buy_price() as u64)
 }
 
 pub async fn get_price(id: &str) -> Option<(u64, u64)> {
-    BAZAAR.read().await.get(id).map(|p| (*p.buy_price() as u64, *p.sell_price() as u64))
+    BAZAAR.read().await.get(id).map(|p| (p.buy_price() as u64, p.sell_price() as u64))
 }

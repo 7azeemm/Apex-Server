@@ -18,13 +18,15 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="...">
-      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="api changes">
+      <change afterPath="$PROJECT_DIR$/skyblock_tools/src/helpers/bazaar_flipper.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/project.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/project.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/constants.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/constants.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/structs/auth_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/structs/auth_structs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/structs/plan.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/structs/plan.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/endpoints.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/endpoints.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/helpers/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/helpers/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/prices/bazaar.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/prices/bazaar.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/structs/bazaar_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/structs/bazaar_structs.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -107,7 +109,7 @@
   <component name="RsExternalLinterProjectSettings">
     <option name="runOnTheFly" value="false" />
   </component>
-  <component name="RunManager" selected="Cargo.Run core">
+  <component name="RunManager" selected="Cargo.Run skyblock_tools">
     <configuration name="Run core" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="run --package core --bin core" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -193,7 +195,7 @@
       <workItem from="1764352880417" duration="7000" />
       <workItem from="1764354753165" duration="579000" />
       <workItem from="1764517459858" duration="2274000" />
-      <workItem from="1764744657091" duration="1340000" />
+      <workItem from="1764744657091" duration="8922000" />
     </task>
     <task id="LOCAL-00001" summary="Surprise">
       <option name="closed" value="true" />
@@ -259,7 +261,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764351472423</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="api changes">
+      <option name="closed" value="true" />
+      <created>1764746143022</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1764746143022</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -287,7 +297,8 @@
     <MESSAGE value="I'm not stopping" />
     <MESSAGE value="Endpoint and other stuff" />
     <MESSAGE value="..." />
-    <option name="LAST_COMMIT_MESSAGE" value="..." />
+    <MESSAGE value="api changes" />
+    <option name="LAST_COMMIT_MESSAGE" value="api changes" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

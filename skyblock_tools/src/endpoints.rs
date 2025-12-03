@@ -4,6 +4,7 @@ use serde::Deserialize;
 use common::extensions::json_ext::JsonExt;
 use common::player_fetcher::get_player_uuid;
 use crate::helpers::accessory_helper::get_accessory_upgrades;
+use crate::helpers::bazaar_flipper::get_bazaar_flips;
 use crate::helpers::museum_helper::get_museum_donations;
 use crate::item_utils::get_pretty_name;
 use crate::prices::auctions::{get_lowest_bin, get_player_auctions, get_auction_deals};
@@ -46,7 +47,11 @@ pub async fn execute_tool(Json(req): Json<ToolRequest>) -> impl IntoResponse {
             get_auction_deals(&mut sb, item_name, budget).await;
             return sb.get_response();
         }
-        // "get_bazaar_flips" => {}
+        "get_bazaar_flips" => {
+            let page = req.args.get_u64("page").unwrap_or(0);
+            get_bazaar_flips(&mut sb, page).await;
+            return sb.get_response();
+        }
         // "get_item_recipe" => {}
         "get_skyblock_events" => {
             get_skyblock_events(&mut sb).await;

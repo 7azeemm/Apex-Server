@@ -29,6 +29,15 @@ impl Plan {
             .expect("Plan config not found")
     }
 
+    pub fn next_plan(&self) -> Option<Plan> {
+        let index = PLAN_CONFIGS
+            .iter()
+            .position(|c| c.plan == *self)
+            .expect("Plan config not found");
+
+        PLAN_CONFIGS.get(index + 1).map(|c| c.plan)
+    }
+
     pub fn daily_tokens(&self) -> i64 {
         self.config().daily_tokens
     }

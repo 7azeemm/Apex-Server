@@ -62,7 +62,9 @@ pub struct UserInfo {
     plan: Plan,
     plan_color: i64,
     plan_started_at: i64,
-    plan_duration: i64,
+    plan_duration: Option<i64>,
+    next_plan: Option<Plan>,
+    next_plan_color: Option<i64>,
     daily_tokens: i64,
     tokens_used_today: i64,
 }
@@ -73,7 +75,9 @@ impl UserInfo {
             plan: user.plan().clone(),
             plan_color: user.plan().color(),
             plan_started_at: *user.plan_started_at(),
-            plan_duration: user.plan().duration().unwrap_or(-1),
+            plan_duration: user.plan().duration(),
+            next_plan: user.plan().next_plan(),
+            next_plan_color: user.plan().next_plan().map(|p| p.color()),
             daily_tokens: user.plan().daily_tokens(),
             tokens_used_today: *user.tokens_used_today(),
         }

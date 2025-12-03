@@ -18,21 +18,13 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="Endpoint and other stuff">
+    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="...">
       <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/api/auth.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/auth.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/api/chats.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/chats.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/api/completions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/completions.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/src/constants.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/constants.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/structs/chat.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/structs/chat.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/workers/plan_expiration.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/workers/plan_expiration.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/endpoints.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/endpoints.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/live_data/jacob_contests.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/live_data/jacob_contests.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/live_data/mayor_info.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/live_data/mayor_info.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/prices/cosmetic_prices.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/prices/cosmetic_prices.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/tools/hypixel_tools.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/tools/hypixel_tools.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/tools/skyblock_tools.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/tools/skyblock_tools.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/structs/auth_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/structs/auth_structs.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/structs/plan.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/structs/plan.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -197,7 +189,11 @@
       <workItem from="1764004086143" duration="340000" />
       <workItem from="1764182415206" duration="383000" />
       <workItem from="1764347937976" duration="2038000" />
-      <workItem from="1764350167310" duration="1235000" />
+      <workItem from="1764350167310" duration="1778000" />
+      <workItem from="1764352880417" duration="7000" />
+      <workItem from="1764354753165" duration="579000" />
+      <workItem from="1764517459858" duration="2274000" />
+      <workItem from="1764744657091" duration="1340000" />
     </task>
     <task id="LOCAL-00001" summary="Surprise">
       <option name="closed" value="true" />
@@ -255,7 +251,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763894501763</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="...">
+      <option name="closed" value="true" />
+      <created>1764351472421</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1764351472423</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -279,11 +283,11 @@
     <MESSAGE value="Surprise" />
     <MESSAGE value="Logger" />
     <MESSAGE value="MORE" />
-    <MESSAGE value="..." />
     <MESSAGE value="Logging is Done :D" />
     <MESSAGE value="I'm not stopping" />
     <MESSAGE value="Endpoint and other stuff" />
-    <option name="LAST_COMMIT_MESSAGE" value="Endpoint and other stuff" />
+    <MESSAGE value="..." />
+    <option name="LAST_COMMIT_MESSAGE" value="..." />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

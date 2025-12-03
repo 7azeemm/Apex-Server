@@ -18,15 +18,11 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="api changes">
-      <change afterPath="$PROJECT_DIR$/skyblock_tools/src/helpers/bazaar_flipper.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/project.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/project.xml" afterDir="false" />
+    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="bazaar flipper tool">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/skyblock_tools/src/endpoints.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/endpoints.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/helpers/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/helpers/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/skyblock_tools/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/prices/bazaar.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/prices/bazaar.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/structs/bazaar_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/structs/bazaar_structs.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/items.rs" beforeDir="false" afterPath="$PROJECT_DIR$/skyblock_tools/src/repos/neu/items.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -195,7 +191,7 @@
       <workItem from="1764352880417" duration="7000" />
       <workItem from="1764354753165" duration="579000" />
       <workItem from="1764517459858" duration="2274000" />
-      <workItem from="1764744657091" duration="8922000" />
+      <workItem from="1764744657091" duration="12988000" />
     </task>
     <task id="LOCAL-00001" summary="Surprise">
       <option name="closed" value="true" />
@@ -269,7 +265,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764746143022</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="bazaar flipper tool">
+      <option name="closed" value="true" />
+      <created>1764788124091</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1764788124091</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -298,7 +302,8 @@
     <MESSAGE value="Endpoint and other stuff" />
     <MESSAGE value="..." />
     <MESSAGE value="api changes" />
-    <option name="LAST_COMMIT_MESSAGE" value="api changes" />
+    <MESSAGE value="bazaar flipper tool" />
+    <option name="LAST_COMMIT_MESSAGE" value="bazaar flipper tool" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

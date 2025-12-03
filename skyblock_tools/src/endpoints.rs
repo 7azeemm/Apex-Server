@@ -9,7 +9,7 @@ use crate::helpers::museum_helper::get_museum_donations;
 use crate::item_utils::get_pretty_name;
 use crate::prices::auctions::{get_lowest_bin, get_player_auctions, get_auction_deals};
 use crate::prices::bazaar::get_price;
-use crate::repos::neu::items::get_id_by_name;
+use crate::repos::neu::items::{get_id_by_name, RECIPES};
 use crate::repos::wiki::wiki_searcher::search_skyblock_wiki;
 use crate::structs::auctions_structs::Budget;
 use crate::structs::player_data_structs::{PlayerDataResponse, StringBuilder};
@@ -52,7 +52,11 @@ pub async fn execute_tool(Json(req): Json<ToolRequest>) -> impl IntoResponse {
             get_bazaar_flips(&mut sb, page).await;
             return sb.get_response();
         }
-        // "get_item_recipe" => {}
+        "get_item_recipe" => {
+            let item_name = req.args.get_str("item_name").unwrap_or_default();
+            get_item_recipe(&mut sb, item_name).await;
+            return sb.get_response();
+        }
         "get_skyblock_events" => {
             get_skyblock_events(&mut sb).await;
             return sb.get_response();
@@ -122,6 +126,47 @@ pub async fn execute_tool(Json(req): Json<ToolRequest>) -> impl IntoResponse {
     }
 
     sb.get_response()
+}
+
+async fn get_item_recipe(sb: &mut StringBuilder, item_name: &str) {
+    let item_ids = get_id_by_name(item_name).await;
+    let item_id = match item_ids.first() {
+        Some(id) => id,
+        None => {
+            sb.push("Couldn't find the item".to_owned());
+            return;
+        }
+    };
+
+    match RECIPES.read().await.get(item_id) {
+        None => sb.push(format!("{item_id} does not have a recipe")),
+        Some(recipe) => {
+            let count = recipe.get("count").map(|s| s.to_owned()).unwrap_or("1".to_owned());
+            let count: u64 = count.parse().unwrap_or(1);
+            sb.push(match count {
+                1 => format!("Item: {}", get_pretty_name(item_id)),
+                _ => format!("Item: {count}x {}", get_pretty_name(item_id))
+            });
+            sb.push("Recipe:".to_owned());
+
+            let grid_keys = [
+                ["A1", "A2", "A3"],
+                ["B1", "B2", "B3"],
+                ["C1", "C2", "C3"],
+            ];
+
+            for row in &grid_keys {
+                let row_str = row.iter()
+                    .map(|key| {
+                        let item = recipe.get(*key).map(|s| s.to_owned()).unwrap_or("".to_string());
+                        format!("[{}]", item)
+                    })
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                sb.push(format!("  {row_str}"));
+            }
+        }
+    };
 }
 
 async fn get_item_price(sb: &mut StringBuilder, item_name: &str) {

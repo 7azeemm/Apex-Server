@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::constants::misc::{ACCESSORY_RARITIES, RARITIES};
 use crate::repos::neu::neu_repo::REPO_PATH;
 use crate::utils::strip_formatting;
@@ -13,6 +14,7 @@ use crate::item_utils::get_pretty_name;
 static ITEMS: LazyLock<RwLock<FxHashMap<String, Value>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
 static ITEM_NAMES: LazyLock<RwLock<FxHashMap<String, String>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
 static PET_NAMES: LazyLock<RwLock<FxHashMap<String, String>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
+pub static RECIPES: LazyLock<RwLock<FxHashMap<String, HashMap<String, String>>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
 pub static ACCESSORIES: LazyLock<RwLock<FxHashMap<String, String>>> = LazyLock::new(|| RwLock::new(FxHashMap::default()));
 
 pub async fn load_items() -> Result<(), Box<dyn Error + Send + Sync>> {
@@ -21,6 +23,7 @@ pub async fn load_items() -> Result<(), Box<dyn Error + Send + Sync>> {
     let mut items_map = FxHashMap::default();
     let mut item_names_map = FxHashMap::default();
     let mut pet_names_map = FxHashMap::default();
+    let mut recipes_map = FxHashMap::default();
 
     for entry in entries {
         let entry = entry?;
@@ -50,6 +53,25 @@ pub async fn load_items() -> Result<(), Box<dyn Error + Send + Sync>> {
                     }
                 }
                 item_names_map.insert(item_id.to_owned(), strip_formatting(display_name));
+
+                let recipe = value.get_array("recipes")
+                    .map(|a| a.first())
+                    .unwrap_or_else(|| value.get("recipe"));
+
+                if let Some(recipe) = recipe {
+                    let recipe_type = recipe.get_str("type");
+                    if recipe_type == None || recipe_type == Some("crafting") {
+                        let mut recipe_map = HashMap::new();
+                        for (k, v) in recipe.as_object().unwrap() {
+                            if let Some(v) = v.as_str() {
+                                if k.len() == 2 || k == "type" || k == "count" {
+                                    recipe_map.insert(k.to_owned(), v.to_owned());
+                                }
+                            }
+                        }
+                        recipes_map.insert(item_id.to_owned(), recipe_map);
+                    }
+                }
             }
 
             items_map.insert(item_id.to_owned(), value);
@@ -64,6 +86,9 @@ pub async fn load_items() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     let mut items = ITEMS.write().await;
     *items = items_map;
+
+    let mut recipes = RECIPES.write().await;
+    *recipes = recipes_map;
 
     Ok(())
 }

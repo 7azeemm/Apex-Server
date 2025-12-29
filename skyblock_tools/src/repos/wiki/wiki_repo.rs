@@ -1,4 +1,5 @@
-use crate::repos::wiki::wiki_searcher::{update_index, Section, WikiPage};
+use std::collections::HashMap;
+use crate::repos::wiki::wiki_searcher::{update_index, WikiPage};
 use crate::structs::repo_structs::Repo;
 use common::extensions::json_ext::JsonExt;
 use rustc_hash::FxHashMap;
@@ -73,21 +74,18 @@ async fn process_file(path: &Path) -> Option<(String, WikiPage)> {
         }
     };
 
-    let title = json.get_str("title")?;
-    let introduction = json.get("Introduction").map(json_to_str);
+    let title = json.get_str("title")?.to_owned();
+    let introduction = json.get("Introduction").map(json_to_str).unwrap_or_default();
 
-    let mut sections = Vec::new();
+    let mut sections = HashMap::new();
     if let Some(map) = json.as_object() {
         for (key, value) in map.iter() {
-            if key == "title" || key == "Introduction" || key == "tags" {
-                continue;
-            }
-            sections.push(Section::new(key.to_owned(), json_to_str(value)));
+            if key == "title" || key == "Introduction" || key == "tags" { continue }
+            sections.insert(key.to_owned(), json_to_str(value));
         }
     }
 
-    let page = WikiPage::new(title.to_owned(), introduction, sections);
-    Some((title.to_owned(), page))
+    Some((title.clone(), WikiPage::new(title, introduction, sections)))
 }
 
 fn json_to_str(value: &Value) -> String {

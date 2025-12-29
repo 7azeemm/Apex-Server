@@ -1,7 +1,10 @@
+use std::collections::HashMap;
 use crate::repos::wiki::wiki_repo::get_pages_by_title;
 use std::sync::{Arc, LazyLock, RwLock};
 use derive_new::new;
 use getset::Getters;
+use serde::Serialize;
+use serde_json::json;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::*;
@@ -12,19 +15,12 @@ use crate::structs::player_data_structs::StringBuilder;
 const TOP_N: usize = 5;
 static WIKI_SEARCHER: LazyLock<RwLock<Arc<WikiSearcher>>> = LazyLock::new(|| RwLock::new(Arc::new(WikiSearcher::new(Vec::new()).unwrap())));
 
-#[derive(Debug, Clone, new, Getters)]
+#[derive(Debug, Serialize, Clone, new, Getters)]
 #[getset(get = "pub")]
 pub struct WikiPage {
     title: String,
-    introduction: Option<String>,
-    sections: Vec<Section>,
-}
-
-#[derive(Debug, Clone, new, Getters)]
-#[getset(get = "pub")]
-pub struct Section {
-    title: String,
-    content: String,
+    introduction: String,
+    sections: HashMap<String, String>,
 }
 
 pub fn update_index(pages: Vec<WikiPage>) {
@@ -62,15 +58,15 @@ impl WikiSearcher {
         for page in pages {
             let mut document = doc!(
                 title_field => *page.title(),
-                intro_field => page.introduction().clone().unwrap_or_default(),
+                intro_field => *page.introduction(),
             );
 
-            for section in page.sections() {
+            for (title, content) in page.sections() {
                 document.add_text(
                     section_title_field,
-                    format!("{} {}", page.title(), section.title()),
+                    format!("{} {}", page.title(), title),
                 );
-                document.add_text(section_content_field, section.content());
+                document.add_text(section_content_field, content);
             }
 
             writer.add_document(document)?;
@@ -97,9 +93,9 @@ impl WikiSearcher {
                 self.section_content_field,
             ],
         );
-        parser.set_field_boost(self.title_field, 4.0);
-        parser.set_field_boost(self.section_title_field, 2.5);
-        parser.set_field_boost(self.intro_field, 1.5);
+        parser.set_field_boost(self.title_field, 5.0);
+        parser.set_field_boost(self.intro_field, 3.0);
+        parser.set_field_boost(self.section_title_field, 2.0);
         parser.set_field_boost(self.section_content_field, 0.8);
         parser
     }
@@ -112,7 +108,7 @@ impl WikiSearcher {
         let query_parsed = parser.parse_query(query)?;
         let top_docs = searcher.search(&query_parsed, &TopDocs::with_limit(TOP_N))?;
 
-        let mut results: Vec<(String, f32)> = top_docs
+        let results: Vec<(String, f32)> = top_docs
             .into_iter()
             .map(|(score, doc_address)| {
                 let retrieved_doc = searcher
@@ -129,39 +125,27 @@ impl WikiSearcher {
             })
             .collect();
 
-        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         Ok(results)
     }
 }
 
 pub async fn search_skyblock_wiki(sb: &mut StringBuilder, query: &str) {
     let searcher = WIKI_SEARCHER.read().unwrap().clone();
-    let results = searcher.search(query).unwrap_or_default();
+    let query_results = searcher.search(query).unwrap_or_default();
 
-    let titles: Vec<String> = results.iter().map(|(t, _)| t.clone()).collect();
+    let titles: Vec<String> = query_results.iter().map(|(t, _)| t.clone()).collect();
     let pages = get_pages_by_title(titles).await;
 
-    let pages: Vec<(WikiPage, f32)> = results
-        .into_iter()
-        .zip(pages)
-        .filter_map(|((_, score), page_opt)| page_opt.map(|p| (p, score)))
-        .collect();
-
-    for ((page, section)) in pages {
-        sb.push(format!("Title: {}", page.title));
-        sb.push(format!("Score: {}", section));
-        if let Some(intro) = page.introduction {
-            sb.push(format!("Introduction: {intro}"));
-        }
-
-        sb.pushln();
-
-        for (i, section) in page.sections.iter().enumerate() {
-            sb.push(format!("## {}", section.title));
-            sb.push(format!("{}...", section.content.chars().take(100).collect::<String>()));
-            if i < page.sections.len() - 1 {
-                sb.pushln();
-            }
+    let mut map = HashMap::new();
+    for ((title, score), page) in query_results.iter().zip(pages) {
+        if let Some(page) = page {
+            map.insert(title.clone(), json!({
+                "introduction": page.introduction,
+                "sections": page.sections,
+                "score": *score as u64
+            }));
         }
     }
+
+    sb.push(json!(map).to_string())
 }

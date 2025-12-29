@@ -30,7 +30,7 @@ use crate::constants::{MAINTENANCE, MIN_VERSION};
 use crate::structs::api_structs::ApiResponse;
 
 const MOJANG_KEYS_ENDPOINT: &str = "https://api.minecraftservices.com/publickeys";
-const TOKEN_LIFESPAN: i64 = (50 * 60) + 10;
+const TOKEN_LIFESPAN: i64 = (5 * 60) + 10;
 const CHECK_EXPIRED_TOKENS_THRESHOLD: u64 = 5;
 const MOJANG_KEYS_FETCH_THRESHOLD: u64 = 30 * 60;
 
@@ -149,14 +149,14 @@ pub async fn auth(ValidatedJson(request): ValidatedJson<TokenRequest>) -> Respon
         &cert_keys,
     );
 
-    // if let Err(err) = is_key_valid {
-    //     return ApiResponse::err_and_log(
-    //         "Failed to auth",
-    //         StatusCode::UNAUTHORIZED,
-    //         format!("Failed to verify player public key: {}", err),
-    //         &error_context
-    //     );
-    // }
+    if let Err(err) = is_key_valid {
+        return ApiResponse::err_and_log(
+            "Failed to auth",
+            StatusCode::UNAUTHORIZED,
+            format!("Failed to verify player public key: {}", err),
+            &error_context
+        );
+    }
 
     let signed_data = request.signed_data();
     let owns_private = verify_client_signature(
@@ -165,14 +165,14 @@ pub async fn auth(ValidatedJson(request): ValidatedJson<TokenRequest>) -> Respon
         signed_data.signed(),
     );
 
-    // if let Err(err) = owns_private {
-    //     return ApiResponse::err_and_log(
-    //         "Failed to auth",
-    //         StatusCode::UNAUTHORIZED,
-    //         format!("Client did not sign challenge correctly: {err}"),
-    //         &error_context
-    //     );
-    // }
+    if let Err(err) = owns_private {
+        return ApiResponse::err_and_log(
+            "Failed to auth",
+            StatusCode::UNAUTHORIZED,
+            format!("Client did not sign challenge correctly: {err}"),
+            &error_context
+        );
+    }
 
     match get_or_create_user(player_uuid.clone(), player_name.clone()).await {
         Err((api_err, sys_err)) => ApiResponse::internal_err(api_err, sys_err, &error_context),

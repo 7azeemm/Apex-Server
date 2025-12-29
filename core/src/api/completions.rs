@@ -19,20 +19,17 @@ use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::{sleep, Instant};
 use tracing::{error, info};
 use common::http::HTTP_CLIENT;
-use crate::constants::CACHED_INPUT_TOKENS_RATE;
+use crate::constants::{AI_SERVER_CHAT_ENDPOINT, CACHED_TOKENS_RATE};
 use crate::structs::api_structs::ApiResponse;
 use crate::structs::auth_structs::Session;
 use crate::structs::plan::Plan;
 
-const CHAT_TYPES: &[&str] = &["normal", "skyblock"];
-const AI_SERVER_CHAT_ENDPOINT: &str = "http://127.0.0.1:8001/chat";
 const MAX_PROMPT_CHARS: usize = 4000;
 
 #[derive(Debug, Deserialize)]
 pub struct CompletionsRequest {
     chat_uuid: String,
     prompt: String,
-    chat_type: String,
     retry: Option<bool>,
 }
 
@@ -47,24 +44,16 @@ pub async fn completions_handler(
 ) -> Result<Sse<impl Stream<Item=Result<Event, Infallible>>>, Response> {
     let chat_uuid = request.chat_uuid;
     let prompt = request.prompt;
-    let chat_type = request.chat_type;
     let retry = request.retry.unwrap_or(false);
-
-    if !CHAT_TYPES.contains(&&*chat_type) {
-        return Err(ApiResponse::err_and_log(
-            "chat_type is invalid",
-            StatusCode::BAD_REQUEST, "", &[("chat_type", chat_type)]
-        ));
-    }
 
     if prompt.len() > MAX_PROMPT_CHARS {
         return Err(ApiResponse::err(
-            "Prompt is too long! Maximum",
+            "Prompt is too long!",
             StatusCode::BAD_REQUEST
         ));
     }
 
-    let plan = {
+    let (plan, player) = {
         let session = session.read().await;
         let user = session.user();
         if user.exceeded_limit() {
@@ -74,19 +63,20 @@ pub async fn completions_handler(
                 StatusCode::PAYMENT_REQUIRED,
             ));
         }
-        user.plan().clone()
+        (user.plan().clone(), user.player_name().clone())
     };
 
-    let chat = get_chat_or_create(&session, chat_uuid, &chat_type, &prompt, retry).await?;
+    let chat = get_chat_or_create(&session, chat_uuid, &prompt, retry).await?;
     let chat_uuid = chat.uuid().to_owned();
     let chat_name = chat.name().to_owned();
 
     let context_window = plan.context_window();
-    let mut messages_json = build_context_messages(chat.messages(), &prompt, context_window);
+    let messages = build_context_messages(chat.messages(), &prompt, context_window);
 
+    let request = json!({"messages": messages, "player": player});
     let response = HTTP_CLIENT
         .post(AI_SERVER_CHAT_ENDPOINT)
-        .json(&json!({"messages": messages_json, "chat_type": chat_type}))
+        .json(&request)
         .send()
         .await
         .map_err(|e| {
@@ -107,7 +97,7 @@ pub async fn completions_handler(
                 Ok(bytes) => {
                     let text = String::from_utf8_lossy(&bytes);
                     match serde_json::from_str::<Value>(&text) {
-                        Err(err) => error!(?err, "Failed to decode chunk from AI server"),
+                        Err(err) => error!(?err, "Failed to decode data from AI server"),
                         Ok(mut json) => {
                             if let Some(content) = json.get_str("completions/content") {
                                 full_text.push_str(content);
@@ -120,11 +110,11 @@ pub async fn completions_handler(
                                     let _ = tx.send(StreamItem::Token(piece)).await;
                                 }
                             } else if let Some(usage) = json.get("usage") {
-                                let prompt_tokens = usage.get_i64("prompt_tokens").unwrap_or(0);
                                 let input_tokens = usage.get_i64("input_tokens").unwrap_or(0);
                                 let output_tokens = usage.get_i64("output_tokens").unwrap_or(0);
-                                let cached_input_tokens = usage.get_i64("cached_input_tokens").unwrap_or(0);
-                                let tokens_usage = input_tokens + output_tokens + (cached_input_tokens as f32 * CACHED_INPUT_TOKENS_RATE) as i64;
+                                let cached_tokens = usage.get_i64("cached_tokens").unwrap_or(0);
+                                let prompt_tokens = usage.get_i64("prompt_tokens").unwrap_or(0);
+                                let tokens_usage = (input_tokens - cached_tokens) + output_tokens + (cached_tokens as f32 * CACHED_TOKENS_RATE) as i64;
 
                                 json["usage"]["tokens_usage"] = Value::from(tokens_usage);
                                 let _ = tx.send(StreamItem::Usage(json)).await;
@@ -139,6 +129,10 @@ pub async fn completions_handler(
                                     Ok(tools) => tools_data = Some(tools),
                                     Err(err) => error!(?err, "Failed to serialize tools")
                                 }
+                            } else if let Some(error) = json.get("error") {
+                                let error_type = error.get_str("type").unwrap_or("Unknown");
+                                let error_message = error.get_str("message").unwrap_or("Unknown");
+                                error!(error_type, error_message, "Received Error from AI Server")
                             } else { error!(?json, "Received unexpected data from AI Server") }
                         }
                     }

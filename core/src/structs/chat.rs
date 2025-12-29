@@ -9,7 +9,6 @@ use serde_json::Value;
 pub struct Chat {
     uuid: String,
     name: String,
-    chat_type: String,
     messages: Vec<Message>,
     token_usage: i64,
     created_at: i64,
@@ -58,6 +57,5 @@ pub enum Sender {
 pub struct ChatSummary {
     chat_uuid: String,
     chat_name: String,
-    chat_type: String,
     updated_at: i64,
 }

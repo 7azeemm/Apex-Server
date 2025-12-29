@@ -1,6 +1,8 @@
 use crate::structs::plan::{Plan, PlanConfig};
 
-pub const CACHED_INPUT_TOKENS_RATE: f32 = 0.25;
+pub const AI_SERVER_CHAT_ENDPOINT: &str = "http://127.0.0.1:8001/chat";
+
+pub const CACHED_TOKENS_RATE: f32 = 0.25;
 
 pub const MAINTENANCE: bool = false;
 pub const MIN_VERSION: &str = "1.0.0";

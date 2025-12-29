@@ -10,6 +10,8 @@ use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
+use common::http::HTTP_CLIENT;
+use crate::constants::AI_SERVER_CHAT_ENDPOINT;
 use crate::structs::api_structs::ApiResponse;
 use crate::structs::auth_structs::Session;
 
@@ -19,7 +21,7 @@ pub async fn get_chats(Extension(session): Extension<Arc<RwLock<Session>>>) -> R
 
     let chats = match sqlx::query!(
         r#"
-        SELECT id, chat_name, chat_type, updated_at
+        SELECT id, chat_name, updated_at
         FROM chats
         WHERE player_uuid = $1
         ORDER BY updated_at DESC
@@ -36,7 +38,6 @@ pub async fn get_chats(Extension(session): Extension<Arc<RwLock<Session>>>) -> R
             ChatSummary::new(
                 chat.id,
                 chat.chat_name,
-                chat.chat_type,
                 chat.updated_at,
             )
         })
@@ -45,28 +46,26 @@ pub async fn get_chats(Extension(session): Extension<Arc<RwLock<Session>>>) -> R
     ApiResponse::ok(json!({"chats": chats}))
 }
 
-pub async fn create_chat(session: &Arc<RwLock<Session>>, chat_type: &str, prompt: &str) -> Result<Chat, Response> {
+pub async fn create_chat(session: &Arc<RwLock<Session>>, prompt: &str) -> Result<Chat, Response> {
+    let chat_name = generate_chat_title(prompt).await;
+
     let pool = get_db_pool();
     let current_time = Utc::now().timestamp();
     let chat_uuid = Uuid::new_v4().to_string();
     let player_uuid = session.read().await.user().player_uuid().clone();
-    let chat_name = prompt.split_whitespace().take(4).collect::<Vec<&str>>().join(" ");
     let messages = vec![];
     let tokens = 0;
 
     match sqlx::query!(
         r#"
-        INSERT INTO chats (id, player_uuid, chat_name, chat_type, messages, token_usage, updated_at, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO chats (id, player_uuid, chat_name, messages, token_usage, updated_at, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         "#,
-        chat_uuid, player_uuid, chat_name, chat_type, json!(messages),
+        chat_uuid, player_uuid, chat_name, json!(messages),
         tokens, current_time, current_time
     ).execute(pool).await {
         Ok(_) => {
-            let chat = Chat::new(
-                chat_uuid.clone(), chat_name.to_owned(), chat_type.to_owned(),
-                messages, 0, current_time, current_time
-            );
+            let chat = Chat::new(chat_uuid.clone(), chat_name.to_owned(), messages, 0, current_time, current_time);
             let mut session = session.write().await;
             session.chats_mut().insert(chat_uuid, chat.clone());
             Ok(chat)
@@ -95,7 +94,7 @@ async fn fetch_chat(pool: &PgPool, session: &Arc<RwLock<Session>>, chat_uuid: &s
 
     let chat = match sqlx::query!(
         r#"
-        SELECT id, chat_name, chat_type, messages, token_usage, updated_at, created_at
+        SELECT id, chat_name, messages, token_usage, updated_at, created_at
         FROM chats
         WHERE id = $1 AND player_uuid = $2
         "#,
@@ -114,7 +113,6 @@ async fn fetch_chat(pool: &PgPool, session: &Arc<RwLock<Session>>, chat_uuid: &s
     let chat = Chat::new(
         chat_uuid.to_owned(),
         chat.chat_name,
-        chat.chat_type,
         messages,
         chat.token_usage,
         chat.updated_at,
@@ -127,9 +125,9 @@ async fn fetch_chat(pool: &PgPool, session: &Arc<RwLock<Session>>, chat_uuid: &s
     Ok(chat)
 }
 
-pub async fn get_chat_or_create(session: &Arc<RwLock<Session>>, chat_uuid: String, chat_type: &str, prompt: &str, retry: bool) -> Result<Chat, Response> {
+pub async fn get_chat_or_create(session: &Arc<RwLock<Session>>, chat_uuid: String, prompt: &str, retry: bool) -> Result<Chat, Response> {
     match chat_uuid == "new" {
-        true => create_chat(session, chat_type, prompt).await,
+        true => create_chat(session, prompt).await,
         false => {
             let chat = fetch_chat(get_db_pool(), session, &chat_uuid).await?;
             match retry {
@@ -245,5 +243,22 @@ pub async fn chat_err_resp(
     match chat_not_found {
         false => ApiResponse::internal_err(msg, error, &error_context),
         true => ApiResponse::err_and_log(msg, StatusCode::NOT_FOUND, error, &error_context),
+    }
+}
+
+async fn generate_chat_title(prompt: &str) -> String {
+    let response = match HTTP_CLIENT
+        .post(AI_SERVER_CHAT_ENDPOINT)
+        .json(&json!({ "prompt": prompt }))
+        .send()
+        .await
+    {
+        Ok(resp) => resp,
+        Err(_) => return "New Chat".to_string(),
+    };
+
+    match response.json::<String>().await {
+        Ok(title) if !title.trim().is_empty() => title,
+        _ => "New Chat".to_string(),
     }
 }

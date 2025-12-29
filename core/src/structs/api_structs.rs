@@ -30,7 +30,12 @@ impl<T: Serialize> ApiResponse<T> {
 
 impl ApiResponse<()> {
     fn log(message: String, error: impl Display, context: &[(&str, String)]) {
-        if error.to_string().is_empty() {
+        if context.is_empty() {
+            error!(
+                %error,
+                "{}", message
+            )
+        } else if error.to_string().is_empty() {
             error!(
                 context = %serde_json::to_string(&context).unwrap_or_default(),
                 "{}", message

@@ -54,6 +54,10 @@ impl Plan {
         self.config().color
     }
 
+    pub fn mc_color(&self) -> String {
+        mc_hex_color(self.config().color)
+    }
+
     pub fn response_speed(&self) -> u64 {
         self.config().response_speed
     }
@@ -82,4 +86,29 @@ pub struct ExpiredPlan {
     plan: Plan,
     started_at: i64,
     ended_at: i64,
+}
+
+pub fn mc_hex_color(color: i64) -> String {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+
+    let rgb = (color & 0xFFFFFF) as u32;
+    let bytes = [
+        (rgb >> 20) & 0xF,
+        (rgb >> 16) & 0xF,
+        (rgb >> 12) & 0xF,
+        (rgb >> 8) & 0xF,
+        (rgb >> 4) & 0xF,
+        rgb & 0xF,
+    ];
+
+    let mut out = String::with_capacity(14);
+    out.push('§');
+    out.push('x');
+
+    for &b in &bytes {
+        out.push('§');
+        out.push(HEX[b as usize] as char);
+    }
+
+    out
 }

@@ -11,7 +11,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 use common::http::HTTP_CLIENT;
-use crate::constants::AI_SERVER_CHAT_ENDPOINT;
+use crate::constants::AI_SERVER_IP;
 use crate::structs::api_structs::ApiResponse;
 use crate::structs::auth_structs::Session;
 
@@ -248,7 +248,7 @@ pub async fn chat_err_resp(
 
 async fn generate_chat_title(prompt: &str) -> String {
     let response = match HTTP_CLIENT
-        .post(AI_SERVER_CHAT_ENDPOINT)
+        .post(AI_SERVER_IP.to_owned() + "/generate_title")
         .json(&json!({ "prompt": prompt }))
         .send()
         .await

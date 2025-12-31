@@ -19,6 +19,9 @@ use std::time::Duration;
 use tokio::net::TcpListener;
 use common::logger;
 use utils::database;
+use crate::api::interest::interest;
+use crate::api::users::upgrade_plan;
+use crate::structs::plan::Plan;
 use crate::workers::{daily_token_reset, plan_expiration};
 
 #[tokio::main]
@@ -50,6 +53,7 @@ async fn app() {
 
     let app = Router::new()
         .route("/auth", post(auth))
+        .route("/interest", post(interest))
         .nest("/api", api_router)
         .layer(middleware::from_fn_with_state(
             rate_limiter.clone(),

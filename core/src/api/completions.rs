@@ -19,7 +19,7 @@ use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::{sleep, Instant};
 use tracing::{error, info};
 use common::http::HTTP_CLIENT;
-use crate::constants::{AI_SERVER_CHAT_ENDPOINT, CACHED_TOKENS_RATE};
+use crate::constants::{AI_SERVER_IP, CACHED_TOKENS_RATE};
 use crate::structs::api_structs::ApiResponse;
 use crate::structs::auth_structs::Session;
 use crate::structs::plan::Plan;
@@ -75,7 +75,7 @@ pub async fn completions_handler(
 
     let request = json!({"messages": messages, "player": player});
     let response = HTTP_CLIENT
-        .post(AI_SERVER_CHAT_ENDPOINT)
+        .post(AI_SERVER_IP.to_owned() + "/chat")
         .json(&request)
         .send()
         .await

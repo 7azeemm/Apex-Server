@@ -69,7 +69,7 @@ async fn expire_plans() -> Result<(), sqlx::Error> {
 
             add_pending_notification(
                 player_uuid,
-                format!("Your Plan {plan} has been expired!")
+                format!("§fYour Plan {}{plan} §fhas been expired!", plan.mc_color())
             ).await;
         }
     }

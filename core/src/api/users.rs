@@ -96,7 +96,7 @@ pub async fn upgrade_plan(player_uuid: &str, player_name: &str, new_plan: Plan) 
         }
     };
 
-    let old_plan = user.plan().to_string();
+    let old_plan = user.plan().clone();
     user.upgrade_plan(new_plan);
 
     let history_json = match serde_json::to_value(user.plan_history()) {
@@ -125,7 +125,7 @@ pub async fn upgrade_plan(player_uuid: &str, player_name: &str, new_plan: Plan) 
         Ok(_) => {
             add_pending_notification(
                 player_uuid,
-                format!("Your Plan has been upgraded from {old_plan} to {new_plan}")
+                format!("§6Congratulations§a, Your Plan has been upgraded to {}{new_plan}", new_plan.mc_color())
             ).await;
             discord_logger::log_plan_upgrade(
                 player_name,

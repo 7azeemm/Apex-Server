@@ -1,5 +1,5 @@
 use crate::utils::database::get_db_pool;
-use crate::structs::auth_structs::Session;
+use crate::models::auth::Session;
 use sqlx::PgPool;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -7,9 +7,9 @@ use tokio::sync::RwLock;
 use tracing::error;
 use common::discord_logger;
 use crate::api::auth::{add_pending_notification, remove_user_session};
-use crate::structs::api_structs::ApiResponse;
-use crate::structs::plan::{ExpiredPlan, Plan};
-use crate::structs::user::User;
+use crate::models::api::ApiResponse;
+use crate::models::plan::{ExpiredPlan, Plan};
+use crate::models::user::User;
 
 pub async fn get_or_create_user(player_uuid: String, player_name: String) -> Result<User, (String, String)> {
     let pool = get_db_pool();

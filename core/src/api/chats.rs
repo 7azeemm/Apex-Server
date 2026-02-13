@@ -1,5 +1,5 @@
 use crate::utils::database::get_db_pool;
-use crate::structs::chat::{Chat, ChatSummary, Message};
+use crate::models::chat::{Chat, ChatSummary, Message};
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::Response;
@@ -12,8 +12,8 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 use common::http::HTTP_CLIENT;
 use crate::constants::AI_SERVER_IP;
-use crate::structs::api_structs::ApiResponse;
-use crate::structs::auth_structs::Session;
+use crate::models::api::ApiResponse;
+use crate::models::auth::Session;
 
 pub async fn get_chats(Extension(session): Extension<Arc<RwLock<Session>>>) -> Response {
     let session = session.read().await;

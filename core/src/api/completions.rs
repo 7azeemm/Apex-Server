@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 use crate::api::chats::{update_chat, get_chat_or_create};
-use crate::structs::chat::{Message, Sender, ToolExecution};
+use crate::models::chat::{Message, Sender, ToolExecution};
 use crate::utils::validated_json::ValidatedJson;
 use axum::http::StatusCode;
 use axum::response::sse::Event;
@@ -20,9 +20,9 @@ use tokio::time::{sleep, Instant};
 use tracing::{error, info};
 use common::http::HTTP_CLIENT;
 use crate::constants::{AI_SERVER_IP, CACHED_TOKENS_RATE};
-use crate::structs::api_structs::ApiResponse;
-use crate::structs::auth_structs::Session;
-use crate::structs::plan::Plan;
+use crate::models::api::ApiResponse;
+use crate::models::auth::Session;
+use crate::models::plan::Plan;
 
 const MAX_PROMPT_CHARS: usize = 4000;
 
@@ -96,20 +96,21 @@ pub async fn completions_handler(
                 Err(e) => error!(?e, "Streaming Error"),
                 Ok(bytes) => {
                     let text = String::from_utf8_lossy(&bytes);
+
+                    if text.starts_with("data: content: ") {
+                        let content = &text[15..];
+                        full_text.push_str(content);
+
+                        for piece in content.split_inclusive(char::is_whitespace) {
+                            let _ = tx.send(StreamItem::Token(piece.to_string())).await;
+                        }
+                        continue;
+                    }
+
                     match serde_json::from_str::<Value>(&text) {
                         Err(err) => error!(?err, "Failed to decode data from AI server"),
                         Ok(mut json) => {
-                            if let Some(content) = json.get_str("completions/content") {
-                                full_text.push_str(content);
-
-                                let pieces: Vec<String> = content.split_inclusive(char::is_whitespace)
-                                    .map(|s| s.to_string())
-                                    .collect();
-
-                                for piece in pieces {
-                                    let _ = tx.send(StreamItem::Token(piece)).await;
-                                }
-                            } else if let Some(usage) = json.get("usage") {
+                            if let Some(usage) = json.get("usage") {
                                 let input_tokens = usage.get_i64("input_tokens").unwrap_or(0);
                                 let output_tokens = usage.get_i64("output_tokens").unwrap_or(0);
                                 let cached_tokens = usage.get_i64("cached_tokens").unwrap_or(0);
@@ -158,8 +159,7 @@ pub async fn completions_handler(
                     first_token_time = Some(Instant::now());
                 }
 
-                let json_data = json!({"completions": {"content": word}}).to_string();
-                Some((Ok(Event::default().data(json_data)), rx))
+                Some((Ok(Event::default().data(format!("data: content: {word}"))), rx))
             },
             Some(StreamItem::Usage(mut usage_json)) => {
                 let duration = first_token_time.unwrap_or(start_time).elapsed();

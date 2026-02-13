@@ -1,4 +1,4 @@
-use crate::structs::plan::{Plan, PlanConfig};
+use crate::models::plan::{Plan, PlanConfig};
 
 pub const AI_SERVER_IP: &str = "http://127.0.0.1:9000";
 
@@ -9,11 +9,11 @@ pub const MIN_VERSION: &str = "1.0.0";
 pub const PLAN_CONFIGS: [PlanConfig; 3] = [
     PlanConfig {
         plan: Plan::Free,
-        daily_tokens: 8_000,
+        daily_tokens: 16_000,
         context_window: 4096,
         duration: None,
         color: 0xFFAFAFAF,
-        response_speed: 20
+        response_speed: 50
     },
     PlanConfig {
         plan: Plan::Pro,

@@ -2,7 +2,7 @@ use chrono::Utc;
 use derive_new::new;
 use getset::Getters;
 use serde::{Deserialize, Serialize};
-use crate::structs::plan::{ExpiredPlan, Plan};
+use crate::models::plan::{ExpiredPlan, Plan};
 
 #[derive(Debug, Serialize, Deserialize, Clone, new, Getters)]
 #[getset(get = "pub")]

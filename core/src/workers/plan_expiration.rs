@@ -4,7 +4,7 @@ use tokio::time::sleep;
 use tracing::error;
 use crate::api::auth::add_pending_notification;
 use crate::utils::database::get_db_pool;
-use crate::structs::plan::Plan;
+use crate::models::plan::Plan;
 
 const INTERVAL_DURATION: Duration = Duration::from_secs(60);
 

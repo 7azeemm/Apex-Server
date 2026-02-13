@@ -1,6 +1,6 @@
 #![allow(warnings)]
 mod api;
-mod structs;
+mod models;
 mod constants;
 mod workers;
 mod utils;
@@ -21,7 +21,7 @@ use common::logger;
 use utils::database;
 use crate::api::interest::interest;
 use crate::api::users::upgrade_plan;
-use crate::structs::plan::Plan;
+use crate::models::plan::Plan;
 use crate::workers::{daily_token_reset, plan_expiration};
 
 #[tokio::main]
@@ -63,5 +63,6 @@ async fn app() {
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     let listener = TcpListener::bind(addr).await.expect("Failed to bind to address");
-    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>()).await.expect("Failed to start server");
+    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>()).await
+        .expect("Failed to start server");
 }

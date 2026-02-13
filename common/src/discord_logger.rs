@@ -4,7 +4,7 @@ use serde_json::json;
 use crate::http::HTTP_CLIENT;
 
 static DISCORD_WEBHOOK: Lazy<String> = Lazy::new(|| {
-    var("DISCORD_WEBHOOK_URL").expect("DISCORD_WEBHOOK_URL must be set")
+    var("DISCORD_WEBHOOK_URL").expect("DISCORD_WEBHOOK_URL not found")
 });
 
 struct DiscordLogger;

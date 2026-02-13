@@ -4,7 +4,7 @@ use axum::{
     response::Response,
 };
 use serde::de::DeserializeOwned;
-use crate::structs::api_structs::ApiResponse;
+use crate::models::api::ApiResponse;
 
 pub struct ValidatedJson<T>(pub T);
 

@@ -1,4 +1,4 @@
-use crate::structs::chat::Chat;
+use crate::models::chat::Chat;
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use chrono::Utc;
@@ -7,8 +7,8 @@ use getset::Getters;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
-use crate::structs::plan::Plan;
-use crate::structs::user::User;
+use crate::models::plan::Plan;
+use crate::models::user::User;
 
 fn from_base64_string<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
 where

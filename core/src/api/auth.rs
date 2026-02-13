@@ -1,6 +1,6 @@
 use crate::api::users::get_or_create_user;
-use crate::structs::auth_structs::{Session, TokenRequest, UserInfo};
-use crate::structs::user::User;
+use crate::models::auth::{Session, TokenRequest, UserInfo};
+use crate::models::user::User;
 use crate::utils::validated_json::ValidatedJson;
 use axum::extract::Request;
 use axum::http::StatusCode;
@@ -27,7 +27,7 @@ use tokio::time::{interval_at, Instant};
 use tracing::error;
 use uuid::Uuid;
 use crate::constants::{MAINTENANCE, MIN_VERSION};
-use crate::structs::api_structs::ApiResponse;
+use crate::models::api::ApiResponse;
 
 const MOJANG_KEYS_ENDPOINT: &str = "https://api.minecraftservices.com/publickeys";
 const TOKEN_LIFESPAN: i64 = (5 * 60) + 10;

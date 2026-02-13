@@ -97,7 +97,7 @@ pub async fn completions_handler(
                 Ok(bytes) => {
                     let text = String::from_utf8_lossy(&bytes);
 
-                    if text.starts_with("data: content: ") {
+                    if text.starts_with("content: ") {
                         let content = &text[15..];
                         full_text.push_str(content);
 

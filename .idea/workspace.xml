@@ -15,26 +15,8 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="bind server to all interfaces instead of localhost">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="v1.1.0">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/src/discord_logger.rs" beforeDir="false" afterPath="$PROJECT_DIR$/common/src/discord_logger.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/api/auth.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/auth.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/api/chats.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/chats.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/api/completions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/completions.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/api/users.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/users.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/constants.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/constants.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/structs/api_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/models/api.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/structs/auth_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/models/auth.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/structs/chat.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/models/chat.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/structs/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/models/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/structs/plan.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/models/plan.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/structs/user.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/models/user.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/utils/validated_json.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/utils/validated_json.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/workers/plan_expiration.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/workers/plan_expiration.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -225,7 +207,7 @@
       <workItem from="1767196193262" duration="4292000" />
       <workItem from="1767256042831" duration="4771000" />
       <workItem from="1768655200353" duration="685000" />
-      <workItem from="1771003364930" duration="3272000" />
+      <workItem from="1771003364930" duration="5609000" />
     </task>
     <task id="LOCAL-00001" summary="Surprise">
       <option name="closed" value="true" />
@@ -339,7 +321,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767256278423</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="v1.1.0">
+      <option name="closed" value="true" />
+      <created>1771006799597</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1771006799603</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -372,7 +362,8 @@
     <MESSAGE value="ready" />
     <MESSAGE value="..." />
     <MESSAGE value="bind server to all interfaces instead of localhost" />
-    <option name="LAST_COMMIT_MESSAGE" value="bind server to all interfaces instead of localhost" />
+    <MESSAGE value="v1.1.0" />
+    <option name="LAST_COMMIT_MESSAGE" value="v1.1.0" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

@@ -98,7 +98,7 @@ pub async fn completions_handler(
                     let text = String::from_utf8_lossy(&bytes);
 
                     if text.starts_with("content: ") {
-                        let content = &text[15..];
+                        let content = &text[9..];
                         full_text.push_str(content);
 
                         for piece in content.split_inclusive(char::is_whitespace) {
@@ -159,7 +159,7 @@ pub async fn completions_handler(
                     first_token_time = Some(Instant::now());
                 }
 
-                Some((Ok(Event::default().data(format!("data: content: {word}"))), rx))
+                Some((Ok(Event::default().data(format!("content: {word}"))), rx))
             },
             Some(StreamItem::Usage(mut usage_json)) => {
                 let duration = first_token_time.unwrap_or(start_time).elapsed();

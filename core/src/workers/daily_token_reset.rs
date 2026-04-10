@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tokio::fs;
 use tokio::time::sleep;
 use tracing::{error, info};
-use crate::utils::database::get_db_pool;
+use crate::misc::database::get_db_pool;
 
 const RESET_FILE: &str = "daily_reset.json";
 

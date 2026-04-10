@@ -1,7 +1,7 @@
 use crate::api::users::get_or_create_user;
 use crate::models::auth::{Session, TokenRequest, UserInfo};
 use crate::models::user::User;
-use crate::utils::validated_json::ValidatedJson;
+use crate::misc::validated_json::ValidatedJson;
 use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::middleware::Next;

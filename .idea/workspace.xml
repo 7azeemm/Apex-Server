@@ -15,7 +15,30 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="mistake" />
+    <list default="true" id="347859d8-5fb6-4871-9b8d-7946a1f11f48" name="Changes" comment="mistake">
+      <change afterPath="$PROJECT_DIR$/common/src/extensions.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/src/api.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/src/misc.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/src/models.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/src/workers.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/common/src/extensions/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/common/src/logger.rs" beforeDir="false" afterPath="$PROJECT_DIR$/common/src/logger.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/api/auth.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/auth.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/api/chats.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/chats.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/api/completions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/completions.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/api/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/api/users.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/api/users.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/models/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/utils/database.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/misc/database.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/utils/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/utils/rate_limiter.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/misc/rate_limiter.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/utils/validated_json.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/misc/validated_json.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/workers/daily_token_reset.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/workers/daily_token_reset.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/workers/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/workers/plan_expiration.rs" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/workers/plan_expiration.rs" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -23,6 +46,7 @@
   </component>
   <component name="CopilotPersistence">
     <persistenceIdMap>
+      <entry key="_C:/Users/pc/RustroverProjects/Backend-Server" value="3C7g2wWZJIW5woveEf5SXTrYnsP" />
       <entry key="_D:/RustroverProjects/BackendServer" value="35EujckCNfjfvzi3hmdKWSqNd6k" />
     </persistenceIdMap>
   </component>
@@ -46,7 +70,7 @@
 }</component>
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/7azeemm/SkyBlock-Mod-Backend.git&quot;,
+    &quot;url&quot;: &quot;https://github.com/7azeemm/Backend-Server.git&quot;,
     &quot;accountId&quot;: &quot;2e1a4f15-8366-497c-b827-0aaf99b4ee62&quot;
   }
 }</component>
@@ -68,33 +92,33 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "Cargo.Run core.executor": "Run",
-    "Cargo.Run skyblock_tools.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.rust.reset.selective.auto.import": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "D:/RustroverProjects/BackendServer",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
-    "org.rust.first.attach.projects": "true",
-    "settings.editor.selected.configurable": "language.rust.cargo.check",
-    "to.speed.mode.migration.done": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;Cargo.Run core.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Run skyblock_tools.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/RustroverProjects/BackendServer&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
+    &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
+    &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;language.rust&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\RustroverProjects\SkyBlock-Mod-Backend\core\src\utils" />
@@ -143,7 +167,7 @@
     </recent_temporary>
   </component>
   <component name="RustProjectSettings">
-    <option name="toolchainHomeDirectory" value="$PROJECT_DIR$/../../cargo/bin" />
+    <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
   </component>
   <component name="RustfmtProjectSettings">
     <option name="useRustfmt2" value="false" />
@@ -206,6 +230,8 @@
       <workItem from="1767256042831" duration="4771000" />
       <workItem from="1768655200353" duration="685000" />
       <workItem from="1771003364930" duration="5990000" />
+      <workItem from="1775741820873" duration="1668000" />
+      <workItem from="1775837021798" duration="1011000" />
     </task>
     <task id="LOCAL-00001" summary="Surprise">
       <option name="closed" value="true" />

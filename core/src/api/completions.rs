@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use crate::api::chats::{update_chat, get_chat_or_create};
 use crate::models::chat::{Message, Sender, ToolExecution};
-use crate::utils::validated_json::ValidatedJson;
+use crate::misc::validated_json::ValidatedJson;
 use axum::http::StatusCode;
 use axum::response::sse::Event;
 use axum::response::{Response, Sse};

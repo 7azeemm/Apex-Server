@@ -1,4 +1,4 @@
-use crate::utils::database::get_db_pool;
+use crate::misc::database::get_db_pool;
 use crate::models::auth::Session;
 use sqlx::PgPool;
 use std::str::FromStr;

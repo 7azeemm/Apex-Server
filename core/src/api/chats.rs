@@ -1,4 +1,4 @@
-use crate::utils::database::get_db_pool;
+use crate::misc::database::get_db_pool;
 use crate::models::chat::{Chat, ChatSummary, Message};
 use axum::extract::Path;
 use axum::http::StatusCode;

@@ -63,8 +63,7 @@ where
         let mut visitor = MsgVisitor::default();
         event.record(&mut visitor);
 
-        let timestamp = chrono::Utc::now();
-        let timestamp_str = timestamp.format("%Y-%m-%d %H:%M:%S").to_string();
+        let timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
         let mut main_message = String::new();
         let mut other_fields = Vec::new();
@@ -90,7 +89,7 @@ where
             description.push_str(&other_fields.join("\n"));
             description.push('\n');
         }
-        description.push_str(&format!("**Timestamp:** {}", timestamp_str));
+        description.push_str(&format!("**Timestamp:** {}", timestamp));
 
         log_error(description);
     }
